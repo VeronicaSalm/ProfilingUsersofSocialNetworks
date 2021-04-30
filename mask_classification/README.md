@@ -20,7 +20,7 @@ clean_data.py
 
 ### KNN
 The KNN classifier uses the Universal Sentence Encoder to create vector representations, hashtag segmentation as a preprocessing step, and hand-crafted examples as training data.     
-Note that on my machine, the script crashed several times due to out of memory errors, so I've set it up to store the vectors in files (.pickle files, those generated from the training dataset are in the folder called `tmp/`, while the ones generated from the test set are in the folder called `test/`) so they don't need to be generated on subsequent runs. You can just restart the script if it fails. 
+Note that on my machine, the script crashed several times due to out of memory errors, so I've set it up to store the vectors in files (.pickle files, those generated from the training dataset are in the folder called `tmp/`, while the ones generated from the test set are in the folder called `test/`) so they don't need to be generated on subsequent runs. You can just restart the script if it fails.     
 
 The KNN classifier can be run from this directory using:
 ```
@@ -39,6 +39,14 @@ The code also depends on the nested HashtagMaster folder, which is a modified ve
 #### Hand-Crafted Examples
 
 The hand-crafted training examples can be found in `data/train.csv`.
+
+#### Errors
+
+Currently, the KNN classifier will also produce a script called `errors.csv`, in which each row is a misclassified example in the form:
+```
+Text,True Class,Guessed Class
+```
+where `Text` is the tweet text, `True Class` is the correct class assigned manually, and `Guessed Class` is the class chosen by the KNN classifier.     
 
 ## Clean Data
 I've created a script to extract valid rows of files from the unprocessed_data folder. Currently, running this script will overwrite test.csv, so please use with caution.
