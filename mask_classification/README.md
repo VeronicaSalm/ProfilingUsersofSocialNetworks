@@ -1,4 +1,4 @@
-# Mask Sentiment Classifier
+# KNN: Mask Sentiment Classifier
 
 ## Code Structure 
 
