@@ -12,7 +12,8 @@ from importlib import import_module
 import abc
 import glob
 
-import zen
+import graph_tool.all as gt
+# import zen
 
 import logging
 
@@ -49,13 +50,13 @@ def gimethod_subclasses():
 		__import_gimethod_subclasses()
 		__subclass_import_completed = True
 
-	return GIMethod.__subclasses__() 
+	return GIMethod.__subclasses__()
 
 class GIMethod(object):
 	"""
 	This is the abstract base class for all geographical inference systems supported
-	by the geoinference framework.  All subclasses must explicitly subclass this 
-	class and implement the `GIMethod.train_model(...)` and 
+	by the geoinference framework.  All subclasses must explicitly subclass this
+	class and implement the `GIMethod.train_model(...)` and
 	`GIMethod.load_model(...)`  methods.
 	"""
 	__metaclass__ = abc.ABCMeta
@@ -91,7 +92,7 @@ class GIModel(object):
 	Models are first produced through a training procedure.  After training has
 	been completed, the model can be used to infer locations.
 
-	When subclassed, the `infer_post_location(...)` method must be implemented and 
+	When subclassed, the `infer_post_location(...)` method must be implemented and
 	the `infer_posts_by_user(...)` may optionally be implemented.
 	"""
 
@@ -113,11 +114,11 @@ class GIModel(object):
 		list provided.  Each post is guaranteed to belong to the same user.
 
 		This method can be overridden by the implementing class. By default,
-		it simply calls `GIModel.infer_post_location(...)` for each post in 
+		it simply calls `GIModel.infer_post_location(...)` for each post in
 		the list.
 
 		*Returns*:
 		A list of lat-long tuples, R, such that R[i] is the lat-long for the
 		ith post passed in.
 		"""
-		return [self.infer_post_location(post) for post in posts]		
+		return [self.infer_post_location(post) for post in posts]
