@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 def get_method_by_name(name):
     # get the geoinference class
     candidates = filter(lambda x: x.__name__ == name, gimethod_subclasses())
+    candidates = list(candidates)
 
     if len(candidates) == 0:
         logger.fatal('No geoinference named "%s" was found.' % name)
@@ -299,9 +300,19 @@ def train(args):
 
     args = parser.parse_args(args)
 
-    # confirm that the output directory doesn't exist
-    if os.path.exists(args.model_dir) and not args.force:
-        raise Exception('output model_dir cannot exist')
+    if os.path.exists(args.model_dir):
+        question = "Would you like to remove the existing model directory %s?" % args.model_dir
+        if input(question+' (y/n): ').lower().strip() == "y":
+            print("Removing existing model directory...")
+            os.system("rm -r %s" % args.model_dir)
+        else:
+            raise Exception('dataset directory %s exists' % args.model_dir)
+        logger.info('creating directory %s' % args.model_dir)
+        os.mkdir(args.model_dir)
+
+    #  # confirm that the output directory doesn't exist
+    #  if os.path.exists(args.model_dir) and not args.force:
+    #      raise Exception('output model_dir cannot exist')
 
     # load the method
     method = get_method_by_name(args.method_name)

@@ -183,9 +183,10 @@ def posts2mention_network(posts_dir,extract_user_id,
     logging.info('building the network')
     cnt = 0
     # maps vertex descriptor --> user id
-    vprop = G.new_vertex_property("string")
+    G.vp.user_id = G.new_vertex_property("string")
     # maps edge descriptor --> weight
-    weight_prop = G.new_edge_property("int") # track edge weights
+    G.ep.weight = G.new_edge_property("int64_t") # track edge weights
+
     # maps user id --> vertex descriptor
     vertices = dict()
     # maps a tuple of user ids to their edge descriptor in the graph
@@ -202,7 +203,7 @@ def posts2mention_network(posts_dir,extract_user_id,
             # vertex for this user
             if uid not in vertices:
                 v = G.add_vertex()
-                vprop[v] = uid
+                G.vp.user_id[v] = uid
                 vertices[uid] = v
                 # print("Added new vertex:", uid)
 
@@ -213,7 +214,7 @@ def posts2mention_network(posts_dir,extract_user_id,
                 m = str(m)
                 if m not in vertices:
                     v = G.add_vertex()
-                    vprop[v] = m
+                    G.vp.user_id[v] = m
                     vertices[m] = v
                     # print("Added new vertex:", m)
                 uv = vertices[uid]
@@ -222,14 +223,14 @@ def posts2mention_network(posts_dir,extract_user_id,
                 # determine if the edge uid->m already exists
                 # fun fact: if you pass a string into G.iter_in_edges,
                 #           you get a segmentation fault :)
-                is_target_of_uid = [vprop[edge[1]] for edge in list(G.iter_out_edges(uv))]
+                is_target_of_uid = [G.vp.user_id[edge[1]] for edge in list(G.iter_out_edges(uv))]
                 if m in is_target_of_uid:
                     # if m is already a target of this user, this is not the
                     # first time uid has mentioned m
                     # find the existing edge and simply increase its weight
                     e = edges[(uid, m)]
-                    weight_prop[e] += 1
-                    # print(f"Incremented edge weight from {uid} to {m} to {weight_prop[e]}")
+                    G.ep.weight[e] += 1
+                    # print(f"Incremented edge weight from {uid} to {m} to {G.ep.weight[e]}")
                 else:
                     # this is the first time uid has mentioned m
                     if uid == m:
@@ -238,96 +239,45 @@ def posts2mention_network(posts_dir,extract_user_id,
                             # user, for some reason?
                             continue
                     e = G.add_edge(uv,mv)
-                    weight_prop[e] = 1
+                    G.ep.weight[e] = 1
                     edges[(uid, m)] = e
                     # print(f"Added edge from {uid} to {m}")
 
 
-        print(cnt, "total tweets")
-        print(f"Found {len(vertices)} vertices and {len(edges)} edges.")
+    print(cnt, "total tweets")
+    print(f"Found {len(vertices)} vertices and {len(edges)} edges.")
 
-        # iterate over all pairs of vertices
-        # if both (source, target) and (target, source) are edges,
-        # then keep the edges
-        # otherwise, remove them
-
-        for source, target in list(edges.keys()):
-            if (target, source) not in edges or target == source:
-                G.remove_edge(edges[(source, target)])
-                del edges[(source, target)]
-        print(f"Found {len(vertices)} vertices and {len(edges)} bidirectional edges.")
-
-
-        nodes = set(vertices.values())
-        nodes_list = list(vertices.values())
-        to_remove = []
-        for vstr, v in list(vertices.items()):
-            if len(list(G.iter_all_edges(v))) == 0:
-                to_remove.append(v)
-                del vertices[vstr]
-
-        G.remove_vertex(to_remove)
-        print("Vertices:", len(list(G.iter_vertices())), len(vertices))
-        print("Edges:", len(list(G.iter_edges())), len(edges))
-        print(f"Found {len(vertices)} vertices with degree > 0 and {len(edges)} bidirectional edges.")
-
-        graph_draw(G, vertex_text=G.vertex_index, output="test_graph.pdf")
-        sys.exit()
+    # iterate over all edges (source, target)
+    # if both (source, target) and (target, source) are edges,
+    # then keep the edges
+    # otherwise, remove them
+    for source, target in list(edges.keys()):
+        if (target, source) not in edges or target == source:
+            G.remove_edge(edges[(source, target)])
+            del edges[(source, target)]
+    print(f"Found {len(vertices)} vertices and {len(edges)} bidirectional edges.")
 
 
-    #      edges = G.edges()
-    #      bi, cnt, total = 0, 0, 0
-    #      edge_counts = dict()
-    #      for n in G.nodes():
-    #          edge_counts[n] = 0
-    #
-    #      for edge in edges:
-    #          # print(edge)
-    #          u1, u2 = edge
-    #          w = G.weight(u1, u2)
-    #          total += 1
-    #
-    #          if w > 1:
-    #              cnt += 1
-    #              # print("weight >= 1", w)
-    #              edge_counts[u1] += 1
-    #              edge_counts[u2] += 1
-    #          elif G.has_edge(u2, u1):
-    #              print("G has both edges! Next line should be True, True")
-    #              print(G.has_edge(u1, u2), G.has_edge(u2, u1))
-    #              bi += 1
-    #          else:
-    #              G.rm_edge(u1, u2)
-    #              continue
-    #
-    #
-    #          # if G.has_edge(u1, u2):
-    #          #     print("This edge exists in the graph, test successful")
-    #          #if not G.has_edge(u2, u1):
-    #              # G.rm_edge(u1, u2)
-    #           #   total += 1
-    #              #print("Deleting edge:", edge)
-    #          #else:
-    #           #   print("G has both edges (next line should be True, True):")
-    #            #  print(G.has_edge(u1, u2), G.has_edge(u2, u1))
-    #             # bi += 1
-    #              #total += 1
-    #
-    #      print("cnt =", cnt, "bi =", bi, "total = ", total)
-    #      print("nodes =", len(G.nodes()), "edges =", len(G.edges()))
-    #
-    #      #for n, c in edge_counts.items():
-    #      #    if c == 0:
-    #      #        G.rm_node(n)
-    #
-    #      print("nodes =", len(G.nodes()), "edges =", len(G.edges()))
-    #
-    #      # save the graph
-    #  logging.info('writing network')
-    #  # TODO: Add compression to this...
-    #  zen.io.edgelist.write(G,os.path.join(working_dir,'mention_network.elist'),use_weights=True)
+    # Remove any vertices with degree 0 from the final graph
+    nodes = set(vertices.values())
+    nodes_list = list(vertices.values())
+    to_remove = []
+    for vstr, v in list(vertices.items()):
+        if len(list(G.iter_all_edges(v))) == 0:
+            to_remove.append(v)
+            del vertices[vstr]
 
-    # TODO: save the graph to file
+    G.remove_vertex(to_remove)
+    print(f"Found {len(vertices)} vertices with degree > 0 and {len(edges)} bidirectional edges.")
+
+    # save an image of the resulting graph
+    graph_draw(G, vertex_text=G.vertex_index, output=os.path.join(working_dir, "graph_visualization.pdf"))
+
+    # save the graph to file
+    print("Writing network...", end=" ")
+    dest = os.path.join(working_dir,'saved_graph.gt')
+    G.save(dest)
+    print("Done!")
 
     # done
     return

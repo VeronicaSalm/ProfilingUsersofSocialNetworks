@@ -33,12 +33,13 @@ def __import_gimethod_subclasses():
 		files = os.listdir(path)
 		files = filter(lambda x: x == 'method.py', files)
 		mods = map(lambda x: x.replace('.py',''), files)
-		modules += ['geolocate.gimethods.%s.%s' % (d,m) for m in mods]
+		modules += ['gimethods.%s.%s' % (d,m) for m in mods]
 
 	# load all the modules
 	logger.debug('loading all modules found')
 	for m in modules:
-		import_module('%s' % m)
+                print(m)
+                import_module('%s' % m)
 
 	# done
 

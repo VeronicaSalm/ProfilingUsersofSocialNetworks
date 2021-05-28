@@ -39,7 +39,7 @@ import simplejson
 import json
 import os, os.path
 import logging
-import graph_tool.all as gt
+from graph_tool.all import *
 import gzip
 import subprocess
 
@@ -62,8 +62,8 @@ class SparseDataset(object):
         self._dataset_dir = dataset_dir
         self._users_fname = os.path.join(dataset_dir, users_file)
         self._users_with_locations_fname = os.path.join(dataset_dir, 'users.home-locations.' + default_location_source + '.tsv.gz')
-        self._mention_network_fname = os.path.join(dataset_dir, 'mention_network.elist')
-        self._bi_mention_network_fname = os.path.join(dataset_dir, 'bi_mention_network.elist')
+        self._mention_network_fname = os.path.join(dataset_dir, 'saved_graph.gt')
+        self._bi_mention_network_fname = os.path.join(dataset_dir, 'saved_graph.gt')
         self.excluded_users = excluded_users
 
 
@@ -99,24 +99,24 @@ class SparseDataset(object):
         """
         return self.post_iter()
 
-        def user_home_location_iter(self):
-                """
-                Returns an iterator over all the users whose home location has
-                been already identified.
-                """
-                location_file = self._users_with_locations_fname
-                logger.debug('Loading home locations from %s'
-                             % (self._users_with_locations_fname))
-                fh = gzip.open(location_file)
-                logger.debug('Excluding locations for %d users' % (len(self.excluded_users)))
-                for line in fh:
-                        user_id, lat, lon = line.split('\t')
-                        # print "%s %s" % (user_id, next(iter(self.excluded_users)))
-                        if not user_id in self.excluded_users:
-                                yield (user_id, (float(lat), float(lon)))
-                        #else:
-                        #        print "excluding %s" % user_id
-                fh.close()
+    def user_home_location_iter(self):
+            """
+            Returns an iterator over all the users whose home location has
+            been already identified.
+            """
+            location_file = self._users_with_locations_fname
+            logger.debug('Loading home locations from %s'
+                         % (self._users_with_locations_fname))
+            fh = gzip.open(location_file)
+            logger.debug('Excluding locations for %d users' % (len(self.excluded_users)))
+            for line in fh:
+                    user_id, lat, lon = line.decode().split('\t')
+                    # print "%s %s" % (user_id, next(iter(self.excluded_users)))
+                    if not user_id in self.excluded_users:
+                            yield (user_id, (float(lat), float(lon)))
+                    #else:
+                    #        print "excluding %s" % user_id
+            fh.close()
 
 
     def known_user_locations(self):
@@ -146,14 +146,13 @@ class SparseDataset(object):
         return self.mention_network(bidirectional=True,directed=False,weighted=False)
 
     def build_graph(self,fname,directed,weighted):
-        command = ("wc -l %s" %fname)
-        process = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=None, shell=True)
-        output = process.communicate()
-        print("HERE")
-        print(output)
-        print("THERE")
-        graph_edge_capacity = int(output[0].split()[0]) + 1
-        G = zen.edgelist.read(fname, weighted=weighted, ignore_duplicate_edges=True, merge_graph=zen.Graph(directed=directed, edge_capacity=graph_edge_capacity,edge_list_capacity=1))
+        #  command = ("wc -l %s" %fname)
+        #  process = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=None, shell=True)
+        #  output = process.communicate()
+        print("Loading graph from:", fname)
+        G = load_graph(fname)
+        # G = zen.edgelist.read(fname, weighted=weighted, ignore_duplicate_edges=True, merge_graph=zen.Graph(directed=directed, edge_capacity=graph_edge_capacity,edge_list_capacity=1))
+        print("successfully loaded graph")
         return G
 
 
@@ -166,24 +165,24 @@ class SparseDataset(object):
                 if directed:
                         if weighted:
                                 # fname = os.path.join(self._dataset_dir, 'bi_mention_network.directed.weighted.elist')
-                                fname = os.path.join(self._dataset_dir, 'mention_network.elist')
+                                fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
                                 return self.build_graph(fname,directed=True,weighted=True)
                         else:
                                 pass
                 else:
                         if weighted:
-                                fname = os.path.join(self._dataset_dir, 'mention_network.elist')
+                                fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
                                 return self.build_graph(fname,directed=False,weighted=True)
 
                         else:
-                                fname = os.path.join(self._dataset_dir, 'mention_network.elist')
+                                fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
                                 return self.build_graph(fname,directed=False, weighted=False)
         else:
                 if directed:
                     if weighted:
                             pass
                     else:
-                            fname = os.path.join(self._dataset_dir, 'mention_network.elist')
+                            fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
                             return self.build_graph(fname,directed=True, weighted=False)
                 else:
                         if weighted:

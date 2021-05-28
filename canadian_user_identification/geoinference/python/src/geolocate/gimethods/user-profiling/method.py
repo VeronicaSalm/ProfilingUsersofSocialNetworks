@@ -19,8 +19,8 @@ import time
 import gzip
 
 from collections import defaultdict
-from geolocate import GIMethod, GIModel
-from geolocate import geocoder
+from gimethod import GIMethod, GIModel
+import geocoder
 
 #from twokenize import tokenizeRawTweetText as tokenizer
 
@@ -71,7 +71,7 @@ class UserProfilingMethod(GIMethod):
                 if not location is None:
                     user_id_to_location[user_id] = location
             except KeyError:
-                pass            
+                pass
         model = UserProfilingModel(user_id_to_location)
 
         logger.debug("Finished UserProfilingMethod! Generated a model!")
@@ -166,7 +166,7 @@ class UserProfiling(object):
         logger.debug("Starting to store the location data in the mention network...")
         self.U = set()
         self.store_location_data()
-        logger.debug("Finished storing the location data of users in the mention network")        
+        logger.debug("Finished storing the location data of users in the mention network")
 
         #how accurate the *_old dictionary values are to the new values (this will be a deciding factor in runtime).
         self.CONVERGENCE_ERROR = 0.1
@@ -255,10 +255,10 @@ class UserProfiling(object):
                         first_two_with_tab = None
 
                         if i + 2 < n and is_upper[i+2] and is_up1:
-                            w1 = lc_text[i] 
-                            w2 = lc_text[i+1] 
-                            w3 = lc_text[i+2] 
-                            
+                            w1 = lc_text[i]
+                            w2 = lc_text[i+1]
+                            w3 = lc_text[i+2]
+
                             first_two_with_space = w1 + " " + w2
                             s2 = first_two_with_space + " " + w3
                             location = self.geocoder.geocode(s2)
@@ -290,18 +290,18 @@ class UserProfiling(object):
                                 continue
 
                         elif i + 1 < n and is_up1:
-                            w1 = lc_text[i] 
-                            w2 = lc_text[i+1] 
+                            w1 = lc_text[i]
+                            w2 = lc_text[i+1]
 
                             if first_two_with_tab is None:
                                 first_two_with_tab = w1 + "\t" + w2
-                                
+
                             location = self.geocoder.geocode(first_two_with_tab)
                             if not location is None:
                                 self.record_user_location(first_two_with_tab, location, user_id)
                                 i += 2
                                 continue
-                                                            
+
                             if first_two_with_space is None:
                                 first_two_with_space = w1 + " " + w2
                             location = self.geocoder.geocode(first_two_with_space)
@@ -315,7 +315,7 @@ class UserProfiling(object):
                             location = self.geocoder.geocode(w1)
                             if not location is None:
                                 self.record_user_location(w1, location, user_id)
-                                
+
                         i += 1
 
 

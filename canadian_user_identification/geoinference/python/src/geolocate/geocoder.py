@@ -13,7 +13,7 @@ import os, os.path
 import csv
 import re
 from collections import defaultdict
-from geopy.distance import vincenty
+from geopy.distance import geodesic
 import collections
 import logging
 import gzip
@@ -104,7 +104,7 @@ class Geocoder(object):
 
         elif dataset == "google":
             data = google_data()
-            
+
             city_to_latlon = {}
             city_name_counts = collections.Counter()
 
@@ -164,7 +164,7 @@ class Geocoder(object):
 
         elif dataset == "dbpedia":
             data = dbpedia_data()
-            
+
             city_to_latlon = {}
             city_name_counts = collections.Counter()
             already_entered = set()
@@ -193,11 +193,11 @@ class Geocoder(object):
                 # Ensure we can use this location if we're not allowing duplicates
                 lat_lon = (lat, lon)
                 already_entered.add(lat_lon)
-                
+
                 city = cols[0].lower()
                 country = cols[2].lower()
                 states = cols[1].lower().split('|')
-                
+
                 city_to_latlon[city] = (lat,lon)
                 city_name_counts[city] += 1
 
@@ -215,7 +215,7 @@ class Geocoder(object):
 
         elif dataset == "geonames":
             data = geonames_data()
-            
+
             city_to_latlon = {}
             city_name_counts = collections.Counter()
 
@@ -237,7 +237,7 @@ class Geocoder(object):
                 lon = float(line[4])
                 rounded_lat = round(lat,2)
                 rounded_lon = round(lon,2)
-                
+
                 # Keep track of how many times city names occur
                 city_to_latlon[city_name] = (lat,lon)
                 city_name_counts[city_name] += 1
@@ -312,7 +312,7 @@ class Geocoder(object):
         represents all of those points
         """
         location_name = self.reverse_geocode(lat, lon)
-        
+
         # Check whether we can associate this lat/lon with a city and if not
         # just return the input
         if location_name is None:
@@ -320,7 +320,7 @@ class Geocoder(object):
         # Otherwise, grab the city and return it.
         else:
             return self.geocode(location_name)
-        
+
 
     def geocode(self, location_name):
         """
@@ -341,7 +341,7 @@ class Geocoder(object):
         usaRegex = re.compile("\\bUSA\\b")
         usRegex = re.compile("\\bUS\\b")
         ukRegex = re.compile("\\bUK\\b")
-        
+
         name = location_name
         name = name.strip()
 
@@ -372,8 +372,8 @@ class Geocoder(object):
             name = "new york, new york"
 
         # Strip off all the cruft on either side
-        name = re.sub(ur'^[\W+]+', " ", name);
-        name = re.sub(ur'[\W+]+$', " ", name);
+        name = re.sub(r'^[\W+]+', " ", name);
+        name = re.sub(r'[\W+]+$', " ", name);
         name = name.strip();
 
         # Rename the dict for brevity since we're going to referencing it a lot
@@ -447,7 +447,7 @@ class Geocoder(object):
                         lat_lon = locs[p1]
 
             else:
-                pass #print "CASE5: %s" % (parts)            
+                pass #print "CASE5: %s" % (parts)
 
         # Otherwise no delimeters so we're left to guess at where the name
         # breaks
@@ -463,7 +463,7 @@ class Geocoder(object):
                     lat_lon = locs[p2 + '\t' + p1]
                 elif p1 in locs:
                     lat_lon = locs[p1]
-                
+
                 if lat_lon is None and p1.find("st.") >= 0:
                     p1 = re.sub("st.", "saint", p1)
                     if p1 + '\t' + p2 in locs:
@@ -486,7 +486,7 @@ class Geocoder(object):
             elif len(parts) > 2:
                 # Guess that the last name is a country/state and try
                 # city/<whatever>
-                #print "CASE4: %s" % (parts)                
+                #print "CASE4: %s" % (parts)
                 last = parts[-1]
                 city = ' '.join(parts[:-1])
             else:
@@ -495,11 +495,11 @@ class Geocoder(object):
         # Last ditch effort: just try matching the whole name and hope it's
         # a single unambiguous city match
         if lat_lon is None and name in locs:
-            lat_lon = locs[name]                              
+            lat_lon = locs[name]
 
         #print "FOUND? %s ('%s') -> %s" % (location_name, name, lat_lon)
 
-            
+
 
         return lat_lon
 
@@ -515,7 +515,7 @@ class Geocoder(object):
         for city in cities:
             lat2 = city[0]
             lon2 = city[1]
-            distance = vincenty((lat,lon),(lat2,lon2)).km
+            distance = geodesic((lat,lon),(lat2,lon2)).km
             if distance < closest_location:
                 closest_location = distance
                 best_location = city[2]
@@ -564,7 +564,7 @@ def geonames_data():
     """
     file_contents = []
     file_name = os.path.join("geolocate/resources","geonames.exanded-cities.tsv.gz")
-    f = gzip.open(file_name, 'rb') 
+    f = gzip.open(file_name, 'rb')
     for line in f:
         file_contents.append(line.strip().split('\t'))
     f.close()
