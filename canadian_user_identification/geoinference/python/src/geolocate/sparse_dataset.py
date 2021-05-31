@@ -146,12 +146,8 @@ class SparseDataset(object):
         return self.mention_network(bidirectional=True,directed=False,weighted=False)
 
     def build_graph(self,fname,directed,weighted):
-        #  command = ("wc -l %s" %fname)
-        #  process = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=None, shell=True)
-        #  output = process.communicate()
         print("Loading graph from:", fname)
         G = load_graph(fname)
-        # G = zen.edgelist.read(fname, weighted=weighted, ignore_duplicate_edges=True, merge_graph=zen.Graph(directed=directed, edge_capacity=graph_edge_capacity,edge_list_capacity=1))
         print("successfully loaded graph")
         return G
 

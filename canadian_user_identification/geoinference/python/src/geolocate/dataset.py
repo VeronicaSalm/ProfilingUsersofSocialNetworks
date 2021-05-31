@@ -191,6 +191,7 @@ def posts2mention_network(posts_dir,extract_user_id,
     vertices = dict()
     # maps a tuple of user ids to their edge descriptor in the graph
     edges = dict()
+    user_set = set()
     for posts_fname in os.listdir(posts_dir):
         fh = gzip.open(os.path.join(posts_dir, posts_fname),'r')
         for line in fh:
@@ -233,17 +234,17 @@ def posts2mention_network(posts_dir,extract_user_id,
                     # print(f"Incremented edge weight from {uid} to {m} to {G.ep.weight[e]}")
                 else:
                     # this is the first time uid has mentioned m
-                    if uid == m:
-                        if "retweeted_status" in post:
-                            # this is a retweet. Retweets automatically mention the retweeting
-                            # user, for some reason?
-                            continue
+                    #  if uid == m:
+                    #      if "retweeted_status" in post:
+                    #          # this is a retweet. Retweets automatically mention the retweeting
+                    #          # user, for some reason?
+                    #          continue
                     e = G.add_edge(uv,mv)
                     G.ep.weight[e] = 1
                     edges[(uid, m)] = e
                     # print(f"Added edge from {uid} to {m}")
 
-
+    print("User set:", len(user_set))
     print(cnt, "total tweets")
     print(f"Found {len(vertices)} vertices and {len(edges)} edges.")
 
@@ -251,27 +252,33 @@ def posts2mention_network(posts_dir,extract_user_id,
     # if both (source, target) and (target, source) are edges,
     # then keep the edges
     # otherwise, remove them
+    #for source, target in list(edges.keys()):
+    #    if (target, source) not in edges or target == source:
+    #        G.remove_edge(edges[(source, target)])
+    #        del edges[(source, target)]
     for source, target in list(edges.keys()):
-        if (target, source) not in edges or target == source:
-            G.remove_edge(edges[(source, target)])
-            del edges[(source, target)]
-    print(f"Found {len(vertices)} vertices and {len(edges)} bidirectional edges.")
+        e = edges[(source, target)]
+        if G.ep.weight[e] < 2:
+          G.remove_edge(edges[(source, target)])
+          del edges[(source, target)]
+    #  print(f"Found {len(vertices)} vertices and {len(edges)} bidirectional edges.")
+    print(f"Found {len(vertices)} vertices and {len(edges)} edges with weight >= 2.")
 
 
     # Remove any vertices with degree 0 from the final graph
-    nodes = set(vertices.values())
-    nodes_list = list(vertices.values())
+    #nodes = set(vertices.values())
+    #nodes_list = list(vertices.values())
     to_remove = []
     for vstr, v in list(vertices.items()):
-        if len(list(G.iter_all_edges(v))) == 0:
-            to_remove.append(v)
-            del vertices[vstr]
+      if len(list(G.iter_all_edges(v))) == 0:
+          to_remove.append(v)
+          del vertices[vstr]
 
     G.remove_vertex(to_remove)
     print(f"Found {len(vertices)} vertices with degree > 0 and {len(edges)} bidirectional edges.")
 
     # save an image of the resulting graph
-    graph_draw(G, vertex_text=G.vertex_index, output=os.path.join(working_dir, "graph_visualization.pdf"))
+    #graph_draw(G, vertex_text=G.vertex_index, output=os.path.join(working_dir, "graph_visualization.pdf"))
 
     # save the graph to file
     print("Writing network...", end=" ")

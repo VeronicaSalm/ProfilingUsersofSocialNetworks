@@ -16,13 +16,8 @@ import os.path
 import itertools
 import gzip
 
-from multiprocessing import Process, cpu_count
-from queue import Full as QueueFull
-from queue import Empty as QueueEmpty
-
-
 from gimethod import GIMethod, GIModel
-import multiprocessing
+import sys
 
 
 logger = logging.getLogger(os.path.basename(__file__))
@@ -90,15 +85,15 @@ class SpatialLabelPropagation(GIMethod):
         logger.debug('Loading mention network')
         G = dataset.bi_mention_network()
         all_users = set(G.iter_vertices())
-        logger.debug('Loaded network with %d users and %d edges'
+        print('Loaded network with %d users and %d edges'
                      % (len(all_users), len(list(G.iter_edges()))))
 
         # This dict will contain a mapping from each user ID associated with at
         # least 5 posts within a 15km radius to the user's home location
-        logger.debug('Loading known user locations')
+        print('Loading known user locations')
         user_to_home_loc = {user: loc for (user, loc) in dataset.user_home_location_iter()}
 
-        logger.debug('Loaded gold-standard locations of %s users (%s)'
+        print('Loaded gold-standard locations of %s users (%s)'
                      % (len(user_to_home_loc),
                         float(len(user_to_home_loc)) / len(all_users)))
 
@@ -121,21 +116,21 @@ class SpatialLabelPropagation(GIMethod):
         num_users = len(all_users)
 
         for iteration in range(0, num_iterations):
-            logger.debug('Beginning iteration %s' % iteration)
+            print('Beginning iteration %s' % iteration)
             num_located_at_start = len(user_to_estimated_location)
             num_processed = 0
             for vertex in all_users:
                 user_id = G.vp.user_id[vertex]
-                self.update_user_location(vertex, G,
+                user_to_next_estimated_location = self.update_user_location(vertex, G,
                                           user_to_home_loc,
                                           user_to_estimated_location,
                                           user_to_next_estimated_location)
                 num_processed += 1
                 if num_processed % 10000 == 0:
-                    logger.debug('In iteration %d, processed %d users out of %d, located %d'
+                    print('In iteration %d, processed %d users out of %d, located %d'
                                  % (iteration, num_processed, num_users, len(user_to_next_estimated_location)))
             num_located_at_end = len(user_to_next_estimated_location)
-            logger.debug('At end of iteration %s, located %s users (%s new)' %
+            print('At end of iteration %s, located %s users (%s new)' %
                          (iteration, num_located_at_end,
                           num_located_at_end - num_located_at_start))
 
@@ -143,7 +138,7 @@ class SpatialLabelPropagation(GIMethod):
             # from this iteration
             user_to_estimated_location.update(user_to_next_estimated_location)
 
-        logger.info("Saving model (%s locations) to %s"
+        print("Saving model (%s locations) to %s"
                     % (len(user_to_estimated_location), model_dir))
 
         # Short circuit early if the caller has specified that the model is not
@@ -157,7 +152,6 @@ class SpatialLabelPropagation(GIMethod):
         fh = open(os.path.join(model_dir, 'user-id-to-location.tsv'), 'w')
 
         for user_id, loc in user_to_estimated_location.items():
-            print(loc)
             fh.write("%s\t%s\t%s\n" % (user_id, loc[0], loc[1]))
         fh.close()
         return SpatialLabelPropagationModel(user_to_estimated_location)
@@ -172,18 +166,18 @@ class SpatialLabelPropagation(GIMethod):
         user_to_next_estimated_location dict.  Users who have a home location
         (defined from GPS data) will always be updated with their home location.
         """
-        user_id = G.vp.user_id[vertex]
+        user_id = str(G.vp.user_id[vertex])
         # Short-circuit if we already know where this user is located
         # so that we always preserve the "hint" going forward
         if user_id in user_to_home_loc:
             user_to_next_estimated_location[user_id] = user_to_home_loc[user_id]
-            return
+            return user_to_next_estimated_location
 
         # For each of the users in the user's ego network, get their estimated
         # location, if any
         locations = []
         for neighbor_vertex in G.iter_all_neighbors(vertex): # G.neighbors_iter(user_id):
-            neighbor_id = G.vp.user_id[vertex]
+            neighbor_id = G.vp.user_id[neighbor_vertex]
             if neighbor_id in user_to_estimated_location:
                 locations.append(user_to_estimated_location[neighbor_id])
 
@@ -198,6 +192,8 @@ class SpatialLabelPropagation(GIMethod):
             # we estimate a user's location from their neighbors.
             median = get_geometric_median(locations)
             user_to_next_estimated_location[user_id] = median
+
+        return user_to_next_estimated_location
 
     def load_model(self, model_dir, settings):
         """

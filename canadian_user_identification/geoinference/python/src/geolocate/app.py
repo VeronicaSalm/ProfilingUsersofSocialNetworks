@@ -346,7 +346,7 @@ def train(args):
     start_time = time.time()
     method_inst.train_model(settings,ds,args.model_dir)
     end_time = time.time()
-    logger.info('Trained model %s on dataset %s in %f seconds'
+    print('Trained model %s on dataset %s in %f seconds'
                     % (args.method_name, args.dataset_dir, end_time - start_time))
 
     # drop some metadata into the run method
