@@ -38,19 +38,16 @@ matplotlib.use("agg")
 import simplejson
 import json
 import os, os.path
-import logging
 from graph_tool.all import *
 import gzip
 import subprocess
-
-logger = logging.getLogger(os.path.basename(__file__))
 
 class SparseDataset(object):
     """
     This class encapsulates access to datasets.
     """
 
-    def __init__(self, dataset_dir, users_file='users.tsv.gz', excluded_users=set(), default_location_source='geo-median'):
+    def __init__(self, dataset_dir, default_location_source='geo-median'):
 
         settings_fname = os.path.join(dataset_dir,'dataset.json')
         if os.path.exists(settings_fname):
@@ -60,11 +57,8 @@ class SparseDataset(object):
 
         # prepare for all data
         self._dataset_dir = dataset_dir
-        self._users_fname = os.path.join(dataset_dir, users_file)
         self._users_with_locations_fname = os.path.join(dataset_dir, 'users.home-locations.' + default_location_source + '.tsv.gz')
-        self._mention_network_fname = os.path.join(dataset_dir, 'saved_graph.gt')
-        self._bi_mention_network_fname = os.path.join(dataset_dir, 'saved_graph.gt')
-        self.excluded_users = excluded_users
+        self._network_fname = os.path.join(dataset_dir, 'saved_graph.gt')
 
 
     def post_iter(self):
@@ -80,19 +74,6 @@ class SparseDataset(object):
                 yield post
         fh.close()
 
-    def user_iter(self):
-        """
-        Return an iterator over all posts in the dataset grouped by user. Each
-        user is represented by a list of their posts - so any metadata about the
-        user must be aggregated from the posts it produced.
-        """
-        fh = gzip.open(self._users_fname,'r')
-
-        for line in fh:
-            user = self.load_user(line)
-
-            yield user
-
     def __iter__(self):
         """
         Return an iterator over all the posts in the dataset.
@@ -105,17 +86,12 @@ class SparseDataset(object):
             been already identified.
             """
             location_file = self._users_with_locations_fname
-            logger.debug('Loading home locations from %s'
+            print('Loading home locations from %s'
                          % (self._users_with_locations_fname))
             fh = gzip.open(location_file)
-            logger.debug('Excluding locations for %d users' % (len(self.excluded_users)))
             for line in fh:
-                    user_id, lat, lon = line.decode().split('\t')
-                    # print "%s %s" % (user_id, next(iter(self.excluded_users)))
-                    if not user_id in self.excluded_users:
-                            yield (user_id, (float(lat), float(lon)))
-                    #else:
-                    #        print "excluding %s" % user_id
+                user_id, lat, lon = line.decode().split('\t')
+                yield (user_id, (float(lat), float(lon)))
             fh.close()
 
 
@@ -131,157 +107,9 @@ class SparseDataset(object):
             yield user
         fh.close()
 
-
-    def mention_network(self):
-        """
-        Return the mention network for the dataset.
-        """
-        return self.mention_network(bidirectional=False,directed=True,weighted=False)
-
-    def bi_mention_network(self):
-        """
-        Return the undirected mention network for the dataset consisting
-        only of edges between users who have both mentioned each other.  This
-        """
-        return self.mention_network(bidirectional=True,directed=False,weighted=False)
-
-    def build_graph(self,fname,directed,weighted):
+    def build_graph(self):
+        fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
         print("Loading graph from:", fname)
         G = load_graph(fname)
         print("successfully loaded graph")
         return G
-
-
-    def mention_network(self, bidirectional=False, directed=False, weighted=False):
-        """
-        Return the mention network for the dataset.
-        """
-        print("Build Mention Network")
-        if bidirectional:
-                if directed:
-                        if weighted:
-                                # fname = os.path.join(self._dataset_dir, 'bi_mention_network.directed.weighted.elist')
-                                fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
-                                return self.build_graph(fname,directed=True,weighted=True)
-                        else:
-                                pass
-                else:
-                        if weighted:
-                                fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
-                                return self.build_graph(fname,directed=False,weighted=True)
-
-                        else:
-                                fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
-                                return self.build_graph(fname,directed=False, weighted=False)
-        else:
-                if directed:
-                    if weighted:
-                            pass
-                    else:
-                            fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
-                            return self.build_graph(fname,directed=True, weighted=False)
-                else:
-                        if weighted:
-                                pass
-                        else:
-                                pass
-
-
-        def load_user(self, line):
-                """
-                Converts this compressed representation of the user's data into
-                a dict format that mirrors the full JSON data, except with all
-                unused fields omitted (e.g., posting date).
-                """
-                cols = line.split("\t")
-                user_id_str = cols[0]
-                user_id = user_id_str
-                posts = []
-                user_obj = {}
-                user_obj['user_id']  = user_id
-                user_obj['posts'] = posts
-                COLS_PER_POST = 8
-
-                should_exclude_location_data = user_id in self.excluded_users
-
-                #print "User %d had line with %d columns (%f posts)" % (user_id, len(cols), len(cols) / 8.0)
-
-                for post_offset in range(1, len(cols), COLS_PER_POST):
-                        try:
-                                # Grab the relevant content for this post
-                                text = cols[post_offset]
-                                tweet_id = cols[post_offset+1]
-                                self_reported_loc = cols[post_offset+2]
-                                geo_str = cols[post_offset+3]
-                                mentions_str = cols[post_offset+4]
-                                hashtags_str = cols[post_offset+5]
-                                is_retweet_str = cols[post_offset+6]
-                                place_json = cols[post_offset+7]
-
-                                # Reconstruct the post as a series of nested dicts that
-                                # mirrors the real-world full JSON object in structure
-                                post = {}
-                                post["id_str"] = tweet_id
-                                post["id"] = long(tweet_id)
-                                post["text"] = text
-
-                                if is_retweet_str == 'True':
-                                        # We don't have any data to put, so just fill it
-                                        # with an empty object
-                                        post["retweeted_status"] = {}
-
-                                entities = {}
-                                post["entities"] = entities
-
-                                user_mentions = []
-                                entities["user_mentions"] = user_mentions
-                                if len(mentions_str) > 0:
-                                        mentions = mentions_str.split(" ")
-                                        for mention in mentions:
-                                                mention_obj = {}
-                                                mention_obj["id"] = long(mention)
-                                                mention_obj["id_str"] = mention
-                                                user_mentions.append(mention_obj)
-
-                                hashtags = []
-                                entities["hashtags"] = hashtags
-                                if len(hashtags_str) > 0:
-                                        tags = hashtags_str.split(" ")
-                                        for tag in tags:
-                                                tag_obj = {}
-                                                tag_obj["text"] = tag
-                                                hashtags.append(tag_obj)
-
-
-                                # Only include geo information for posts that are not in
-                                # the set of exlcuded posts, which are likely being used
-                                # for testing data
-                                if len(geo_str) > 0 and not should_exclude_location_data:
-                                        geo = {}
-                                        post["geo"] = geo
-                                        coordinates = []
-                                        coords = geo_str.split(" ")
-                                        coordinates.append(float(coords[0]))
-                                        coordinates.append(float(coords[1]))
-                                        geo["coordinates"] = coordinates
-
-                                # Place is a special case because the field formatting
-                                # is so complex, it's just saved as a raw JSON string.
-                                # This requires reparsing place to stuff in our object.
-                                # However, since place is relative rare (1% of tweets),
-                                # this isn't very expensive
-                                if len(place_json) > 1 and not should_exclude_location_data:
-                                        place = json.loads(place_json)
-                                        post["place"] = place
-                                user = {}
-                                post["user"] = user
-                                user["id_str"] = user_id_str
-                                user["id"] = user_id
-                                user["location"] = self_reported_loc
-
-                                posts.append(post)
-                        except:
-                                logger.info("Saw malformed post when reading user; skipping")
-                                pass
-
-                return user_obj

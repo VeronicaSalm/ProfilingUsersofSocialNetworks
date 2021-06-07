@@ -141,7 +141,6 @@ def posts2mention_network(posts_dir,extract_user_id,
         working_dir = os.path.dirname(posts_dir)
 
     # bin the user data
-    print('Building the network...')
     cnt = 0
     # maps vertex descriptor --> user id
     G.vp.user_id = G.new_vertex_property("string")
@@ -209,18 +208,10 @@ def posts2mention_network(posts_dir,extract_user_id,
       if (target, source) not in edges or target == source:
           G.remove_edge(edges[(source, target)])
           del edges[(source, target)]
-    #  for source, target in list(edges.keys()):
-    #      e = edges[(source, target)]
-    #      if G.ep.weight[e] < 2:
-    #        G.remove_edge(edges[(source, target)])
-    #        del edges[(source, target)]
     print(f"Found {len(vertices)} vertices and {len(edges)} bidirectional edges.")
-    #  print(f"Found {len(vertices)} vertices and {len(edges)} edges with weight >= 2.")
 
 
     # Remove any vertices with degree 0 from the final graph
-    #nodes = set(vertices.values())
-    #nodes_list = list(vertices.values())
     to_remove = []
     for vstr, v in list(vertices.items()):
       if len(list(G.iter_all_edges(v))) == 0:
@@ -231,6 +222,7 @@ def posts2mention_network(posts_dir,extract_user_id,
     print(f"Found {len(vertices)} vertices with degree > 0 and {len(edges)} bidirectional edges.")
 
     # save an image of the resulting graph
+    # omitted: doesn't work well for large graphs
     #graph_draw(G, vertex_text=G.vertex_index, output=os.path.join(working_dir, "graph_visualization.pdf"))
 
     # save the graph to file

@@ -83,7 +83,7 @@ class SpatialLabelPropagation(GIMethod):
         """
 
         logger.debug('Loading mention network')
-        G = dataset.bi_mention_network()
+        G = dataset.build_graph()
         all_users = set(G.iter_vertices())
         print('Loaded network with %d users and %d edges'
                      % (len(all_users), len(list(G.iter_edges()))))
