@@ -13,9 +13,10 @@ import gzip
 import time
 
 from collections import defaultdict
-from gimethod import gimethod_subclasses, GIMethod
+# from gimethod import gimethod_subclasses, GIMethod
 from dataset import Dataset, posts2dataset
 from sparse_dataset import SparseDataset
+import spatial_label_propagation
 
 logger = logging.getLogger(__name__)
 
@@ -315,7 +316,7 @@ def train(args):
     #      raise Exception('output model_dir cannot exist')
 
     # load the method
-    method = get_method_by_name(args.method_name)
+    # method = get_method_by_name(args.method_name)
 
     # load the data
     with open(args.method_settings,'r') as fh:
@@ -339,8 +340,10 @@ def train(args):
 
 
     # load the method
-    method = get_method_by_name(args.method_name)
-    method_inst = method()
+    # method = get_method_by_name(args.method_name)
+    # method_inst = method()
+    from gimethods.spatial_label_propagation.method import SpatialLabelPropagation
+    method_inst = SpatialLabelPropagation()
 
     print("Starting")
     start_time = time.time()
@@ -463,42 +466,29 @@ def build_dataset(args):
     # done
 
 def main():
-    parser = argparse.ArgumentParser(prog='geoinf',description='run a geolocation inference method on a dataset')
+    parser = argparse.ArgumentParser(prog='geoinf',description='run a spatial label propagation method on a dataset')
     parser.add_argument('-l','--log_level',
                         choices=['DEBUG','INFO','WARN','ERROR','FATAL'],
                         default='INFO',help='set the logging level')
-    parser.add_argument('action',choices=['train','infer_by_post','infer_by_user',
-                          'ls_methods','build_dataset','create_folds','cross_validate'],
-            help='indicate whether to train a new model or infer locations')
+    parser.add_argument('action',choices=['train', 'ls_methods','build_dataset'],
+            help='indicate whether to train the model or create a dataset')
     parser.add_argument('action_args',nargs=argparse.REMAINDER,
             help='arguments specific to the chosen action')
 
     args = parser.parse_args()
-
-    logging.basicConfig(level=eval('logging.%s' % args.log_level),
-                        format='%(message)s')
 
     try:
         if args.action == 'train':
             train(args.action_args)
         elif args.action == 'ls_methods':
             ls_methods(args.action_args)
-        elif args.action == 'infer_by_post':
-            infer(args.action_args,False)
-        elif args.action == 'infer_by_user':
-            infer(args.action_args,True)
         elif args.action == 'build_dataset':
             build_dataset(args.action_args)
-        elif args.action == 'create_folds':
-            create_folds(args.action_args)
-        elif args.action == 'cross_validate':
-            cross_validate(args.action_args)
-
         else:
             raise Exception('unknown action: %s' % args.action)
 
     except Exception as e:
-        logger.exception(e)
+        print(e)
 
     # done!
 
