@@ -12,10 +12,8 @@ import gzip
 import time
 
 from collections import defaultdict
-# from gimethod import gimethod_subclasses, GIMethod
 from dataset import Dataset, posts2dataset
 from sparse_dataset import SparseDataset
-#import spatial_label_propagation
 from spatial_label_propagation import SpatialLabelPropagation
 
 def train(args):

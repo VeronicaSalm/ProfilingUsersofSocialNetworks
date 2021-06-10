@@ -9,18 +9,15 @@ import collections
 import json
 import operator
 import random
-import logging
 from geopy.point import Point
 from geopy import distance
 import os.path
 import itertools
 import gzip
 
-from gimethod import GIMethod, GIModel
 import sys
 
 
-logger = logging.getLogger(os.path.basename(__file__))
 
 time_per_infer_user = 0
 num_users_inferred = 0
@@ -28,7 +25,7 @@ time_per_geometric_median = 0
 num_geometric_median = 0
 
 
-class SpatialLabelPropagationModel(GIModel):
+class SpatialLabelPropagationModel:
 
     def __init__(self, user_id_to_location):
         self.user_id_to_location = user_id_to_location
@@ -68,7 +65,7 @@ class SpatialLabelPropagationModel(GIModel):
         return locations
 
 
-class SpatialLabelPropagation(GIMethod):
+class SpatialLabelPropagation:
     def __init__(self):
         # Location is represented as a lat/lon geopy Point
         self.user_id_to_location = {}
@@ -82,7 +79,7 @@ class SpatialLabelPropagation(GIMethod):
         within 15km of each other.
         """
 
-        logger.debug('Loading mention network')
+        print('Loading mention network')
         G = dataset.build_graph()
         all_users = set(G.iter_vertices())
         print('Loaded network with %d users and %d edges'
@@ -255,9 +252,6 @@ def get_home_location(posts):
         lat = coord_arr[0]
         lon = coord_arr[1]
         locations.append(Point(lat, lon))
-
-    #logger.debug('Found %s GPS-tagged locations' % len(locations))
-    #print 'Found %s GPS-tagged locations' % len(locations)
 
         # We need at least 5 GPS tweets to infer a reliable home location
     if len(locations) < 5:
