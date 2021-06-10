@@ -3,44 +3,16 @@
 #
 #  All rights reserved. See LICENSE file for details
 ##
-
 """
 A geoinference dataset is stored on disk in a directory with the following format:
-
     ds_root/
-        dataset.json - metadata about the dataset
-        posts.json.gz - all posts in the dataset in arbitrary order
-        users.json.gz - all posts in the dataset grouped by user
-
-This module provides a class for managing and accessing this directory as well
-as helper functions for building new datasets.
-
-**File formats**:
-
-All three core files in the dataset directory contain data in JSON format.
-
-  - `posts.json.gz` contains one post per line.  Each post is a JSON dictionary,
-    the contents of git@drgitlab.cs.mcgill.ca:druths/sysconfig.gitwhich is specific to the platform the post was taken from.
-
-  - `users.json.gz` contains one user per line.  Each user is a JSON dictionary
-    with at least the following keys:
-      - `user_id` is a string identifier for the user that flags them as unique
-        among all other users in the dataset.
-      - `posts` is a JSON list which contains all the posts belonging to that user.
-        These posts should have identical format and data to those in the
-        `posts.json.gz` file.  Moreover, every post present in the `posts.json` file
-        must be present in `users.json` and visa versa.
+        saved_graph.gt
 """
-# workaround for not having tkinter installed
-import matplotlib
-matplotlib.use("agg")
 
-import simplejson
 import json
 import os, os.path
 from graph_tool.all import *
 import gzip
-import subprocess
 
 class SparseDataset(object):
     """

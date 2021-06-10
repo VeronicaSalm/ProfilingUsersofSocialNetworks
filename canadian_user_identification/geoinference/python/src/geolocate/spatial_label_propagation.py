@@ -4,10 +4,6 @@
 #  All rights reserved. See LICENSE file for details
 ##
 
-import codecs
-import collections
-import json
-import operator
 import random
 from geopy.point import Point
 from geopy import distance

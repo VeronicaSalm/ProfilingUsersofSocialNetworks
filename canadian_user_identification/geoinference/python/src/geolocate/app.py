@@ -5,13 +5,10 @@
 ##
 import argparse
 import json
-import simplejson
 import os, os.path
-import datetime
 import gzip
 import time
 
-from collections import defaultdict
 from dataset import Dataset, posts2dataset
 from sparse_dataset import SparseDataset
 from spatial_label_propagation import SpatialLabelPropagation
@@ -85,92 +82,6 @@ def train(args):
 
     return
 
-def infer(args,by_user=False):
-    prog_name = 'geoinf'
-    if by_user:
-        description='infer the location of posts in a dataset using a specific inference method. Posts will be provided to the method grouped by user.'
-        prog_name += ' infer_by_user'
-    else:
-        description='infer the location of posts in a dataset using a specific inference method. Posts will be provided to the method one at a time.'
-        prog_name += ' infer_by_post'
-
-    parser = argparse.ArgumentParser(prog=prog_name,description=description)
-    parser.add_argument('-f','--force',action='store_true',help='overwrite the output file if it already exists')
-    parser.add_argument('-s','--settings',help='a json file of settings to be passed to the model',nargs=1)
-    parser.add_argument('method_name',help='the type of method to use for inference')
-    parser.add_argument('model_dir',help='the directory of a model that was constructed using the train procedure')
-    parser.add_argument('dataset',help='a json specification for the dataset to infer locations on')
-    parser.add_argument('infer_file',help='the file that the inferences will be written to')
-
-    print('infer args = %s' % str(args))
-    args = parser.parse_args(args)
-
-    # load the infer settings if necessary
-    settings = {}
-    if args.settings:
-        with open(args.settings,'r') as fh:
-            settings = json.load(fh)
-
-    if os.path.exists(args.infer_file) and not args.force:
-        raise Exception('output infer_file cannot exist')
-
-    # load the method
-    method = get_method_by_name(args.method_name)
-    method_inst = method()
-    model = method_inst.load_model(args.model_dir,settings)
-
-    # load the dataset
-    ds = SparseDataset(args.dataset)
-
-    # get the output file ready
-    outfh = open(args.infer_file,'w')
-
-    # write settings to the first line
-    outfh.write('%s\n' % json.dumps({'method': args.method_name,
-                                     'settings': settings,
-                                     'dataset': args.dataset,
-                                     'by_user': by_user}))
-
-    # locate all the posts
-    print('inferring locations for posts')
-    if by_user:
-        num_posts_seen = 0
-        num_posts_located = 0
-        num_users_seen = 0
-        for user in ds.user_iter():
-            user_id = user['user_id']
-            posts = user['posts']
-
-            locs = model.infer_posts_locations_by_user(user_id,posts)
-
-            assert len(locs) == len(posts)
-            num_users_seen += 1
-
-            for loc,post in zip(locs,posts):
-                num_posts_seen += 1
-                if not loc is None:
-                    num_posts_located += 1
-                    outfh.write('%s\t%f\t%f\n' % (post['id'],loc[0],loc[1]))
-
-                if num_posts_seen % 10000 == 0:
-                        print("Saw %d users, %d posts, %d of which were located" % (num_users_seen, num_posts_seen, num_posts_located))
-    else:
-        num_posts_seen = 0
-        num_posts_located = 0
-        for post in ds.post_iter():
-            user_id = post['user']['id_str']
-            loc = model.infer_post_location(post)
-            num_posts_seen += 1
-            if not loc is None:
-                outfh.write('%s\t%f\t%f\n' % (post['id'],loc[0],loc[1]))
-                num_posts_located += 1
-            if num_posts_seen % 10000 == 0:
-                print("Saw %d posts, %d of which were located" % (num_posts_seen, num_posts_located))
-
-    outfh.close()
-
-    # done
-
 def build_dataset(args):
     parser = argparse.ArgumentParser(prog='geoinf build_dataset',description='build a new dataset')
     parser.add_argument('-f','--force',action='store_true')
@@ -181,7 +92,6 @@ def build_dataset(args):
 
     args = parser.parse_args(args)
 
-#   uid_field_name = args.user_id_field
     uid_field_name = args.user_id_field.split('.')[::-1]
     mention_field_name = args.mention_field.split('.')[::-1]
     posts2dataset(args.dataset_dir,args.posts_file,

@@ -14,7 +14,6 @@ import json
 import os, os.path
 from graph_tool.all import *
 import gzip
-import sys
 
 class Dataset(object):
     """
