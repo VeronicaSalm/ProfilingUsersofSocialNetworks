@@ -4,22 +4,35 @@
 #  All rights reserved. See LICENSE file for details
 ##
 
+"""
+Can create a settings.json file with the following fields:
+
+{
+    "num_iterations" : INT,
+    "location_source" : STRING
+}
+
+where
+    num_iterations is the number of SLP iterations to run
+    location_source is the name of a tsv.gz file mapping each user
+                    ID to their lat and lon coordinates, i.e.,
+                                USER_ID\tLAT\tLON
+"""
+
 import random
 from geopy.point import Point
 from geopy import distance
 import os.path
 import itertools
 import gzip
-
 import sys
 
-
+from settings import LOCATION_SOURCE, NUM_ITERATIONS
 
 time_per_infer_user = 0
 num_users_inferred = 0
 time_per_geometric_median = 0
 num_geometric_median = 0
-
 
 class SpatialLabelPropagationModel:
 
@@ -62,10 +75,14 @@ class SpatialLabelPropagationModel:
 
 
 class SpatialLabelPropagation:
-    def __init__(self):
+    def __init__(self, settings=None):
         # Location is represented as a lat/lon geopy Point
         self.user_id_to_location = {}
-
+        if settings:
+            self._settings = settings
+            print("Loaded settings:", self._settings)
+        else:
+            self._settings = dict()
 
     def train_model(self, setting, dataset, model_dir):
         """
@@ -104,7 +121,10 @@ class SpatialLabelPropagation:
         user_to_next_estimated_location = {}
 
         # TODO: make this configurable from the settings varaible
-        num_iterations = 4
+        if NUM_ITERATIONS in self._settings:
+            num_iterations = self._settings[NUM_ITERATIONS]
+        else:
+            num_iterations = 4
 
         num_users = len(all_users)
 

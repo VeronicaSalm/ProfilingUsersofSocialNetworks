@@ -10,26 +10,29 @@ A geoinference dataset is stored on disk in a directory with the following forma
 """
 
 import json
-import os, os.path
-from graph_tool.all import *
+import os, os.path, sys
 import gzip
+from graph_tool.all import *
+from settings import LOCATION_SOURCE
+
 
 class SparseDataset(object):
     """
     This class encapsulates access to datasets.
     """
 
-    def __init__(self, dataset_dir, default_location_source='geo-median'):
-
-        settings_fname = os.path.join(dataset_dir,'dataset.json')
-        if os.path.exists(settings_fname):
-            self._settings = json.load(open(settings_fname,'r'))
-        else:
-            self._settings = {}
+    def __init__(self, dataset_dir, default_location_source=None, settings=dict()):
+        self._settings = settings
 
         # prepare for all data
         self._dataset_dir = dataset_dir
-        self._users_with_locations_fname = os.path.join(dataset_dir, 'users.home-locations.' + default_location_source + '.tsv.gz')
+        if LOCATION_SOURCE in self._settings:
+            self._location_file = self._settings[LOCATION_SOURCE]
+        elif default_location_source == None:
+            self._location_file = os.path.join(dataset_dir, 'users.home-locations.geo-median.tsv.gz')
+        else:
+            self._location_file = default_location_source
+
         self._network_fname = os.path.join(dataset_dir, 'saved_graph.gt')
 
 
@@ -57,10 +60,9 @@ class SparseDataset(object):
             Returns an iterator over all the users whose home location has
             been already identified.
             """
-            location_file = self._users_with_locations_fname
             print('Loading home locations from %s'
-                         % (self._users_with_locations_fname))
-            fh = gzip.open(location_file)
+                         % (self._location_file))
+            fh = gzip.open(self._location_file)
             for line in fh:
                 user_id, lat, lon = line.decode().split('\t')
                 yield (user_id, (float(lat), float(lon)))
@@ -73,7 +75,6 @@ class SparseDataset(object):
         users who have already self-reported their own location.
         """
         fh = gzip.open(self._users_fname,'r')
-
         for line in fh:
             user = self.load_user(line)
             yield user

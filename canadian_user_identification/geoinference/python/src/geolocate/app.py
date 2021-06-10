@@ -9,7 +9,7 @@ import os, os.path
 import gzip
 import time
 
-from dataset import Dataset, posts2dataset
+from build_dataset import posts2dataset
 from sparse_dataset import SparseDataset
 from spatial_label_propagation import SpatialLabelPropagation
 
@@ -58,15 +58,15 @@ def train(args):
     # load the dataset
     ds = None #Dataset(args.dataset_dir)
     if not location_source is None:
-            ds = SparseDataset(args.dataset_dir, default_location_source=location_source)
+            ds = SparseDataset(args.dataset_dir, default_location_source=location_source, settings=settings)
     else:
-            ds = SparseDataset(args.dataset_dir)
+            ds = SparseDataset(args.dataset_dir, settings=settings)
 
 
     # load the method
     # method = get_method_by_name(args.method_name)
     # method_inst = method()
-    method_inst = SpatialLabelPropagation()
+    method_inst = SpatialLabelPropagation(settings)
 
     print("Starting")
     start_time = time.time()

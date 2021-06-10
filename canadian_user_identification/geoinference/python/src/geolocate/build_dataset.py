@@ -6,74 +6,16 @@
 ##
 
 """
+This file contains code for building the dataset.
+
 A geoinference dataset is stored on disk in a directory with the following format:
     ds_root/
         saved_graph.gt
 """
 import json
 import os, os.path
-from graph_tool.all import *
 import gzip
-
-class Dataset(object):
-    """
-    This class encapsulates access to datasets.
-    """
-
-    def __init__(self,dataset_dir, users_file=None):
-            settings_fname = os.path.join(dataset_dir,'dataset.json')
-            if os.path.exists(settings_fname):
-                self._settings = jsonlib.load(open(settings_fname,'r'))
-            else:
-                self._settings = {}
-
-            # prepare for all data
-            self._posts_fname = os.path.join(dataset_dir,'posts.json.gz')
-            if users_file is None:
-                self._users_fname = os.path.join(dataset_dir,'users.json.gz')
-            else:
-                # NOTE: We should probably do some format verification here
-                self._users_fname = users_file
-            self._mention_network_fname = os.path.join(dataset_dir,'mention_network.elist')
-
-    def post_iter(self):
-        """
-        Return an iterator over all the posts in the dataset. The ordering
-        of the posts follows the order of posts in the dataset file.
-        """
-        fh = gzip.open(self._posts_fname,'r')
-
-        for line in fh:
-            post = json.loads(line)
-
-            yield post
-
-    def __iter__(self):
-        """
-        Return an iterator over all the posts in the dataset.
-        """
-        return self.post_iter()
-
-    def user_iter(self):
-        """
-        Return an iterator over all posts in the dataset grouped by user. Each
-        user is represented by a list of their posts - so any metadata about the
-        user must be aggregated from the posts it produced.
-        """
-        fh = gzip.open(self._users_fname,'r')
-
-        for line in fh:
-            user = json.loads(line)
-
-            yield user
-
-    def mention_network(self):
-        """
-        Return the mention network for the dataset.
-        """
-        G = zen.edgelist.read(self._mention_network_fname,directed=True,weighted=True)
-
-        return G
+from graph_tool.all import *
 
 def extract_user_mentions(obj):
     user_mentions = obj["entities"]["user_mentions"]
