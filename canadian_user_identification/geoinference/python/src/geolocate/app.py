@@ -15,7 +15,8 @@ from collections import defaultdict
 # from gimethod import gimethod_subclasses, GIMethod
 from dataset import Dataset, posts2dataset
 from sparse_dataset import SparseDataset
-import spatial_label_propagation
+#import spatial_label_propagation
+from spatial_label_propagation import SpatialLabelPropagation
 
 def train(args):
     parser = argparse.ArgumentParser(prog='geoinf train',description='train a geoinference method on a specific dataset')
@@ -70,7 +71,6 @@ def train(args):
     # load the method
     # method = get_method_by_name(args.method_name)
     # method_inst = method()
-    from gimethods.spatial_label_propagation.method import SpatialLabelPropagation
     method_inst = SpatialLabelPropagation()
 
     print("Starting")

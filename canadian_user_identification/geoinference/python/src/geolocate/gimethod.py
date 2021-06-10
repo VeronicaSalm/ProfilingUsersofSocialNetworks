@@ -4,20 +4,13 @@
 #  All rights reserved. See LICENSE file for details
 ##
 # workaround for not having tkinter installed
-import matplotlib
-matplotlib.use("agg")
-
 import os, os.path
 from importlib import import_module
 import abc
 import glob
 
 import graph_tool.all as gt
-# import zen
 
-import logging
-
-logger = logging.getLogger(os.path.basename(__file__))
 
 __subclass_import_completed = False
 
@@ -68,7 +61,6 @@ class GIMethod(object):
 		This method build a geoinference model using the settings and dataset
 		provided.  The model should be stored in the directory `model_dir` which
 		is guaranteed to exist.
-
 		*Returns*:
 		A subclass of `GIModel` specific to the subclass of `GIMethod` that has
 		implemented this method.
@@ -80,7 +72,6 @@ class GIMethod(object):
 		"""
 		This method loads a subclass of `GIModel` from the directory `model_dir`
 		which, presumably, was constructed by a call to `GIMethod.train_model(...)`.
-
 		*Returns*:
 		A subclass of `GIModel` specific to the subclass of `GIMethod` that has
 		implemented this method.
@@ -92,7 +83,6 @@ class GIModel(object):
 	This is the abstract base class for all geographical inference system models.
 	Models are first produced through a training procedure.  After training has
 	been completed, the model can be used to infer locations.
-
 	When subclassed, the `infer_post_location(...)` method must be implemented and
 	the `infer_posts_by_user(...)` may optionally be implemented.
 	"""
@@ -103,7 +93,6 @@ class GIModel(object):
 	def infer_post_location(self,post):
 		"""
 		This method infers the location for the post specified.
-
 		*Returns*:
 		A lat-long tuple.
 		"""
@@ -113,13 +102,12 @@ class GIModel(object):
 		"""
 		This method infers the locations for each of the posts in the
 		list provided.  Each post is guaranteed to belong to the same user.
-
 		This method can be overridden by the implementing class. By default,
 		it simply calls `GIModel.infer_post_location(...)` for each post in
 		the list.
-
 		*Returns*:
 		A list of lat-long tuples, R, such that R[i] is the lat-long for the
 		ith post passed in.
 		"""
 		return [self.infer_post_location(post) for post in posts]
+
