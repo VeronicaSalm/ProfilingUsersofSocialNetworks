@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from copy import deepcopy
+import reverse_geocoder as rg
 
 # For printing status updates while running
 NUM_TWEETS = 10000
@@ -12,6 +13,7 @@ NUM_TWEETS = 10000
 PLACE = "place object"
 PROFILE_LOCATION = "user profile location"
 PROFILE_DESCRIPTION = "user profile description"
+COORDINATES = "coordinates"
 
 
 class CanadianFilter:
@@ -76,7 +78,31 @@ class CanadianFilter:
                 result["evidence"] = place_country_code
                 return result
 
-        # 2. Check whether the user's profile location contains a Canadian term.
+        # 2. Check whether the tweet is geotagged with coordinates, and reverse geocode them.
+        if "geo" in tweet_json and tweet_json["geo"] != None:
+            geo = tweet_json["geo"]
+
+            if geo["type"] == "Point":
+                pass
+                coords = tuple(geo["coordinates"])
+                location = rg.search(coords)[0]
+
+                if location["cc"] == "CA":
+                    # The tweet is geotagged in Canada, return True.
+                    result["country_code"] = location["cc"]
+                    result["is_canadian"] = True
+                    result["method"] = COORDINATES
+                    result["evidence"] = location["cc"]
+                    return result
+                else:
+                    # The tweet is geotagged outside of Canada, automatically return False.
+                    result["country_code"] = location["cc"]
+                    result["is_canadian"] = False
+                    result["method"] = COORDINATES
+                    result["evidence"] = location["cc"]
+                    return result
+
+        # 3. Check whether the user's profile location contains a Canadian term.
         for d in self.canadian_locs:
             if d in loc:
                 # The user's location field contains a Canadian term, return True.
@@ -85,7 +111,7 @@ class CanadianFilter:
                 result["evidence"] = d
                 return result
 
-        # 3. Check if the user's description contains a Canadian demonym such
+        # 4. Check if the user's description contains a Canadian demonym such
         #    as "Canadian" or "Albertan".
         for d in self.canadian_demonyms:
             if d in desc:
@@ -117,7 +143,7 @@ class CanadianFilter:
 
                 if i and i % NUM_TWEETS == 0:
                     # update the number of tweets processed so far
-                    print("    i")
+                    print(f"    {i}")
 
                 # apply the filter
                 result = self.is_canadian(d)
