@@ -7,7 +7,7 @@ Run the following commands to install necessary packages:
 pip install reverse_geocoder
 pip install vaderSentiment
 ```
-You will also need to install graph-tool if using Spatial Label Propagation. Follow the instructions here: [https://git.skewed.de/count0/graph-tool/-/wikis/installation-instructions#debian-ubuntu](graph-tool installation instructions).
+You will also need to install graph-tool if using Spatial Label Propagation. Follow the instructions here: [graph-tool installation instructions](https://git.skewed.de/count0/graph-tool/-/wikis/installation-instructions#debian-ubuntu).
 
 ## Canadian Filter 
 
