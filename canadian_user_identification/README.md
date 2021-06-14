@@ -6,6 +6,7 @@ Run the following commands to install necessary packages:
 ```
 pip install reverse_geocoder
 pip install vaderSentiment
+pip3 install geopy
 ```
 You will also need to install graph-tool if using Spatial Label Propagation. Follow the instructions here: [graph-tool installation instructions](https://git.skewed.de/count0/graph-tool/-/wikis/installation-instructions#debian-ubuntu).
 
@@ -99,10 +100,9 @@ The code uploaded to this repo contains all the changes that were necessary to m
 
 A demo of the SLP code can be run on the server using all of the following lines. Note that the script assumes that the file of ground-truth user IDs and locations is a gzipped tsv file called `users.home-locations.geo-median.tsv.gz`. This file is already included in the repository. First ensure you are located in the `geoinference/python/src` directory, and then run the following lines:
 ```
-python2 -m geolocate.app -l DEBUG build_dataset dataset tweets "user.id" "entities.mentions"
+python3 -m slp.app build_dataset dataset tweets "user.id" "entities.mentions"
 ```
 where:
-* `-l DEBUG`: adds additional print statements for debugging
 * `build_dataset`: indicates that the mode is dataset construction
 * `dataset`: the path to a directory where the resulting dataset should be stored, must not exist!
 * `tweets`: the path to a directory containing one or more tweet files (gzipped json files) where each line is a tweet object
@@ -111,11 +111,9 @@ where:
 
 Once the dataset is constructed, SLP can be run using:
 ```
-cp users.home-locations.geo-median.tsv.gz dataset
-python2 -m geolocate.app -l DEBUG train SpatialLabelPropagation settings.json dataset model_dir
+python3 -m slp.app train SpatialLabelPropagation settings.json dataset model_dir
 ```
 where:
-* `-l DEBUG`: adds additional print statements for debugging
 * `train SpatialLabelPropagation`: indicates that the SLP algorithm should be run
 * `settings.json`: the path to a settings file, can be empty
 * `dataset`: the path to the folder containing the dataset constructed above
@@ -123,7 +121,7 @@ where:
 
 The output is stored in `model_dir` and is a `.tsv` file where each line is a user ID followed by a pair of lat/lon coordinates, the found location for that user. Note that all the ground truth users are written to this file as well (so this file contains all located users, not just new ones).
 
-### slp_cross_validation
+### Cross Validation: slp_cross_validation
 
 This folder contains several files involved in the cross validation:
 * `DataManager.py` contains the code to divide the ground-truth Canadian users into folds. It can be run simply using `python3 DataManager.py` and expects the file `canadian_users.tsv` to be present in the same directory and contain all the ground truth user IDs (included in the repo).
