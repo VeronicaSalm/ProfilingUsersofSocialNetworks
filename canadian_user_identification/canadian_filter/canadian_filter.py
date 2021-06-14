@@ -83,7 +83,6 @@ class CanadianFilter:
             geo = tweet_json["geo"]
 
             if geo["type"] == "Point":
-                pass
                 coords = tuple(geo["coordinates"])
                 location = rg.search(coords)[0]
 

@@ -4,10 +4,9 @@
 import argparse
 import json
 import os
-import sys
 import time
-from copy import deepcopy
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import reverse_geocoder as rg
 
 # Argparse for input json file, must be unzipped!
 parser = argparse.ArgumentParser(description="Extract all tweets geotagged in Canada, run vader on them, and store the tweets in an output folder")
@@ -28,7 +27,7 @@ EXT_ENTITIES = "extended_entities"
 
 def process_tweet_file(inpath, out_json_file):
     """
-    Arguments: 
+    Arguments:
         inpath: path to .jsonl file to process
         out_json_file: .jsonl file object to which to store the extracted tweets
 
@@ -49,13 +48,29 @@ def process_tweet_file(inpath, out_json_file):
 
             # Check if this tweet is Canadian, skip it otherwise
             place_country_code = None
+            canadian = False
+
+            # Check if there is a Canadian place object in the tweet
             if "place" in d and d["place"] != None:
                 place_country_code = d["place"]["country_code"]
-            
-            if place_country_code == "CA":
-                # Found a tweet geotagged in Canada
-                # perform vader sentiment analysis 
+                if place_country_code == "CA":
+                    # Found a tweet geotagged in Canada
+                    canadian = True
+
+            # Check if the tweet is geotagged in Canada
+            if "geo" in d and d["geo"] != None:
+                geo = d["geo"]
+
+                if geo["type"] == "Point":
+                    coords = tuple(geo["coordinates"])
+                    location = rg.search(coords)[0]
+
+                    if location["cc"] == "CA":
+                        canadian = True
+            if canadian:
                 canadian_cnt += 1
+
+                # Compute the vader score
                 score = analyser.polarity_scores(d["full_text"])
                 d["vader_score"] = score
 
@@ -66,17 +81,23 @@ def process_tweet_file(inpath, out_json_file):
             # skip this user
             line = json_file.readline()
             i += 1
-    print(f"Found {canadian_cnt} Canadian tweets out of {i} total tweets") 
+    print(f"Found {canadian_cnt} Canadian tweets out of {i} total tweets")
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    
+
     my_path = os.path.join(os.getcwd(), args.input_path)
 
     out_dir = os.path.join(os.getcwd(), args.output_path)
 
     if os.path.isdir(my_path):
-        out_file = os.path.join(out_dir, args.input_path + ".jsonl")
+        # extract the subdirectory
+        inp = my_path.split("/")
+        if inp[-1]:
+            inp = inp[-1]
+        else:
+            inp = inp[-2]
+        out_file = os.path.join(out_dir, inp + ".jsonl")
         print(out_file)
         out_obj = open(out_file, "w")
         for f in sorted(os.listdir(my_path)):
