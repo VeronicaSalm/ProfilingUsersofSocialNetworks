@@ -1,5 +1,0 @@
-# Ignore the zenlib sub-repo directory
-zenlib/
-
-# Ignore CPython binary files
-*.pyc
