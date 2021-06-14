@@ -1,6 +1,26 @@
 ## Spatial Label Propagation
 
-## Extracting Ground Truth Canadians 
+## Packages
+
+Run the following commands to install necessary packages:
+```
+pip install reverse_geocoder
+pip install vaderSentiment
+```
+You will also need to install graph-tool if using Spatial Label Propagation. Follow the instructions here: [https://git.skewed.de/count0/graph-tool/-/wikis/installation-instructions#debian-ubuntu](graph-tool installation instructions).
+
+## Canadian Filter 
+
+The script `canadian_filter.py` can be found in the directory `canadian_filter/` and extracts all tweets geotagged in Canada from a source directory. It can be run as follows:
+```
+cd canadian_filter
+python3 canadian_filter.py INPUT_PATH OUTPUT_PATH
+```
+where:
+* `INPUT_PATH` is the path to a folder containing tweet files (.jsonl) to analyze 
+* `OUTPUT_PATH` is the path to an existing folder where the output tweets should be stored.
+
+## Extracting Tweets Geotagged in Canada
 
 The script `extract_canadian_tweets.py` is used to extract all tweets geotagged in Canada. It can be run as follows:
 ```
@@ -10,7 +30,7 @@ where:
 * `INPUT_PATH` is the path to a folder containing tweet files (.jsonl) to analyze 
 * `OUTPUT_PATH` is the path to an existing folder where the output tweets should be stored.
 
-### Group Tweets by User
+### Group Geotagged Tweets by User
 
 The script `group_tweets_by_user.py` iterates over all the Canadian tweets and groups them by user. It can be run as follows:
 ```
