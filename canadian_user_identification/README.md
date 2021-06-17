@@ -77,11 +77,11 @@ where:
 * `INPUT_PATH` is the path to a folder containing tweet files (.jsonl) to analyze 
 * `OUTPUT_PATH` is the path to an existing folder where the output tweets should be stored.
 
-### Extracting Canadian Tweets From April, 2020
+### Extracting Canadian Tweets and Tweets Mentioning Canadians
 
-The script `get_canadian_tweets_april.py` is used to extract all tweets written by likely-Canadian users (those considered Canadian by the Canadian filter). The script was created to extract tweets from April, 2020, but can technically take command-line arguments with paths to any set of tweets. It expects that there exists a file called `canadian_ids_no_dups.txt`, which contains a list of all Canadian user IDs found by the Canadian filter. It also runs VADER on the resulting tweets (this is an artifact from an earlier script, but I left it in as I thought it might be useful). It can then be run as follows:
+The script `extract_tweets_by_or_mentioning_canadians.py` is used to extract all tweets written by likely-Canadian users (those considered Canadian by the Canadian filter) and those that mention such users. It expects that there exists a file called `canadian_ids_no_dups.txt`, which contains a list of all Canadian user IDs found by the Canadian filter. It also runs VADER on the resulting tweets (this is an artifact from an earlier script, but I left it in as I thought it might be useful). It can then be run as follows:
 ```
-python3 extract_ground_truth_tweets.py INPUT_PATH OUTPUT_PATH
+python3 extract_tweets_by_or_mentioning_canadians.py INPUT_PATH OUTPUT_PATH
 ```
 where:
 * `INPUT_PATH` is the path to a folder containing tweet files (.jsonl) to analyze, or to a single .jsonl file
@@ -98,28 +98,48 @@ The code uploaded to this repo contains all the changes that were necessary to m
 
 ### geoinference
 
-A demo of the SLP code can be run on the server using all of the following lines. Note that the script assumes that the file of ground-truth user IDs and locations is a gzipped tsv file called `users.home-locations.geo-median.tsv.gz`. This file is already included in the repository. First ensure you are located in the `geoinference/python/src` directory, and then run the following lines:
+A demo of the SLP code can be run on the server using all of the following lines. Note that the script assumes that the file of ground-truth user IDs and locations is a gzipped tsv file called `users.home-locations.geo-median.tsv.gz`. This file is already included in the repository. First ensure you are located in the `spatial_label_propagation` directory, and then run the following lines:
+
+#### Construct Mention Network
 ```
-python3 -m slp.app build_dataset dataset tweets "user.id" "entities.mentions"
+python3 -m slp.app build_dataset dataset tweets "user.id" "entities.user_mentions.id"
 ```
 where:
 * `build_dataset`: indicates that the mode is dataset construction
 * `dataset`: the path to a directory where the resulting dataset should be stored, must not exist!
 * `tweets`: the path to a directory containing one or more tweet files (gzipped json files) where each line is a tweet object
 * `“user.id”`: sets the field where the user id can be found
-* `“entities.mentions”`: sets the field where the list of user mentions can be found
+* `“entities.user_mentions.id”`: sets the field where the list of user mentions can be found
 
+#### Construct Follow Network
+If, instead, you want to construct a network of follow relationships, use:
+```
+python3 -m slp.app build_dataset follows_test tweets "id" "friends" "followers"
+```
+where:
+* `build_dataset`: indicates that the mode is dataset construction
+* `dataset`: the path to a directory where the resulting dataset should be stored, must not exist!
+* `follows_test`: the path to a directory containing one or more follow files (gzipped jsonl files) containing on each line the follow data for a given user
+* `“id”`: sets the field where the user id can be found
+* `“friends”`: sets the field where the list of followed users can be found
+* `“friends”`: sets the field where the list of followed users can be found
+
+#### Run SLP
 Once the dataset is constructed, SLP can be run using:
 ```
 python3 -m slp.app train SpatialLabelPropagation settings.json dataset model_dir
 ```
 where:
 * `train SpatialLabelPropagation`: indicates that the SLP algorithm should be run
-* `settings.json`: the path to a settings file, can be empty
+* `settings.json`: the path to a settings file
 * `dataset`: the path to the folder containing the dataset constructed above
 * `model_dir`: the path to an output directory where the result should be stored, must not exist!
 
 The output is stored in `model_dir` and is a `.tsv` file where each line is a user ID followed by a pair of lat/lon coordinates, the found location for that user. Note that all the ground truth users are written to this file as well (so this file contains all located users, not just new ones).
+
+#### Changing the Settings
+
+There is a file called `settings.json` in the `spatial_label_propagation` directory that allows changing the path to the ground-truth location file (by default, `users.home-locations.geo-median.tsv.gz`) and the number of iterations of SLP to execute (by default, 4).
 
 ### Cross Validation: slp_cross_validation
 
