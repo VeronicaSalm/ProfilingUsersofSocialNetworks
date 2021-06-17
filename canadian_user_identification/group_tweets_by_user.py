@@ -28,7 +28,7 @@ users = defaultdict(list)
 
 def process_tweet_file(inpath):
     """
-    Arguments: 
+    Arguments:
         inpath: path to .jsonl file to process
 
     Returns:
@@ -43,7 +43,7 @@ def process_tweet_file(inpath):
             d = json.loads(line)
             # get the user ID
             user_id = d["user"]["id"]
-            
+
             # add to our map
             users[user_id].append(d)
 
@@ -51,7 +51,7 @@ def process_tweet_file(inpath):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    
+
     my_path = os.path.join(os.getcwd(), args.input_path)
 
     out_file = os.path.join(os.getcwd(), args.output_path)
@@ -63,9 +63,10 @@ if __name__ == "__main__":
             process_tweet_file(fpath)
     else:
         process_tweet_file(my_path)
-    
-    
+
+
     counts = defaultdict(int)
+    # print some information about the tweet counts per user (e.g., how many have at least 10 tweets)
     for user_id, tweets in users.items():
         if len(tweets) >= 10:
             counts[10] += 1
@@ -73,7 +74,7 @@ if __name__ == "__main__":
             counts[len(tweets)] += 1
     print(counts)
 
-    
+
     for user_id, tweets in users.items():
         output = { "user" : user_id,
                    "tweets" : tweets}

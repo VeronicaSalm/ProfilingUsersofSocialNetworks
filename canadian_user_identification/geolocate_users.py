@@ -3,7 +3,7 @@
 # Each geotagged tweet is assumed to have the "place" object.
 # Then, users are geolocated by (1) checking that they have at least 3 tweets geotagged
 # within a 100km radius and (2) computing the geometric median of the geotagged tweets for
-# any such users. 
+# any such users.
 # If users don't have at least 3 geotagged tweets in the given region, they are skipped.
 # The result is a TSV file of
 #   user_ID \t latitude \t longitude
@@ -31,13 +31,15 @@ parser.add_argument("output_path",
 users = dict()
 
 
-def geometric_median(tweets):
+def geometric_median(tweets, min_locs):
     """
     Computes the geometric median of a list of geotagged tweets.
     Each tweet is expected to have the place object.
 
     Arguments:
         tweets (list): the list of geotagged tweets from the given user
+        min_locs (int >= 1): the minimum number of geotagged tweets needed for a user to
+                             be assigned a location
 
     Returns:
         median (tuple): the lat/lon coordinates of the geometric median
@@ -45,41 +47,41 @@ def geometric_median(tweets):
     # get a list of location tuples, in the form lat/lon
     loc_list = []
     for t in tweets:
-        # since each polygon in the place object is a rectangle (at least in our data)
-        # we can just use a formula for the midpoint of a rectangle
-        # https://stackoverflow.com/questions/9734821/how-to-find-the-center-coordinate-of-rectangle
-        polygon = t["place"]["bounding_box"]["coordinates"][0]
+        # extract coordinates from the tweet, if available
+        if "geo" in t and t["geo"] != None:
+            # if there are coordinates, simply use those
+            loc_list.append(tuple(t["geo"]["coordinates"]))
+        elif "place" in t and t["place"] != None:
+            # otherwise, use place information
+            # since each polygon in the place object is a rectangle (at least in our data)
+            # we can just use a formula for the midpoint of a rectangle
+            # https://stackoverflow.com/questions/9734821/how-to-find-the-center-coordinate-of-rectangle
+            polygon = t["place"]["bounding_box"]["coordinates"][0]
 
-        if len(polygon) != 4:
-            # expected a rectangular polygon
-            print(json.dumps(t, indent=4))
-            print("Error: Found place object whose polygon was not rectangular!")
-            sys.exit()
+            if len(polygon) != 4:
+                # expected a rectangular polygon
+                print(json.dumps(t, indent=4))
+                print("Error: Found place object whose polygon was not rectangular!")
+                sys.exit()
 
-        x1 = polygon[0][0]
-        x2 = polygon[2][0]
+            x1 = polygon[0][0]
+            x2 = polygon[2][0]
+            y1 = polygon[0][1]
+            y2 = polygon[2][1]
 
-        y1 = polygon[0][1]
-        y2 = polygon[2][1]
+            if x2 < x1:
+                x1, x2 = x2, x1
+            if y2 < y1:
+                y1, y2 = y2, y1
 
-        #if x1 == x2 or y1 == y2:
-            # polygon not configured as expected
-        #    print(json.dumps(t, indent=4))
-        #    print("Error: coordinates matched unexpectedly.")
-        #    sys.exit()
+            y_width = (y2 - y1)
+            x_width = (x2 - x1)
+            midpoint = (y1 + y_width / 2, x1 + x_width/2)
+            loc_list.append(midpoint)
 
-        if x2 < x1:
-            x1, x2 = x2, x1
-        if y2 < y1:
-            y1, y2 = y2, y1
-
-        y_width = (y2 - y1)
-        x_width = (x2 - x1) 
-        # print(y1, y2, y_width)
-        # print(x1, x2, x_width)
-        midpoint = (y1 + y_width / 2, x1 + x_width/2)
-        loc_list.append(midpoint)
-        # print(polygon, "\n", midpoint)
+    if len(loc_list) < min_locs:
+        # There were not enough tweets with locations to safely estimate
+        return None
 
     median = None
     best_sum = float('inf')
@@ -101,7 +103,7 @@ def geometric_median(tweets):
 
 def process_tweet_file(inpath, min_tweets=3):
     """
-    Arguments: 
+    Arguments:
         inpath: path to .jsonl file to process
         min_tweets (int): the minimum number of tweets that must be geotagged within
                           a 100 km radius for each user, defaults to 3.
@@ -119,21 +121,17 @@ def process_tweet_file(inpath, min_tweets=3):
             # get the user ID
             user_id = d["user"]
             tweets = d["tweets"] # list of geotagged tweets from this user
-            if len(tweets) >= min_tweets:
-                # check if at least min_tweets tweets are within a 100 km radius
-                        
-
-                # if so, find a ground-truth location for this user
-                median = geometric_median(tweets)
+            # try to find a ground-truth location for this user
+            median = geometric_median(tweets, min_tweets)
+            if median != None:
                 print(median)
-
                 users[user_id] = median
 
             line = json_file.readline()
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    
+
     my_path = os.path.join(os.getcwd(), args.input_path)
 
     out_file = os.path.join(os.getcwd(), args.output_path)
@@ -145,7 +143,7 @@ if __name__ == "__main__":
             process_tweet_file(fpath)
     else:
         process_tweet_file(my_path)
-    
+
     tsv_writer = csv.writer(out_obj, delimiter="\t")
     for user, median in users.items():
         tsv_writer.writerow([user, median[0], median[1]])
