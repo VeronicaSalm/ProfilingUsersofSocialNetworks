@@ -30,7 +30,7 @@ EXT_ENTITIES = "extended_entities"
 
 def process_tweet_file(inpath, out_json_file):
     """
-    Arguments: 
+    Arguments:
         inpath: path to .jsonl file to process
         out_json_file: .jsonl file object to which to store the extracted tweets
 
@@ -49,7 +49,7 @@ def process_tweet_file(inpath, out_json_file):
         while line:
             d = json.loads(line)
             ID = d["id"]
-            
+
             canadian_mentioned = False
             for mention in d["entities"]["user_mentions"]:
                 if mention["id_str"] in canadian_ids:
@@ -57,7 +57,7 @@ def process_tweet_file(inpath, out_json_file):
                     break
 
             if d["user"]["id"] in canadian_ids or canadian_mentioned == True:
-                # perform vader sentiment analysis 
+                # perform vader sentiment analysis
                 canadian_cnt += 1
                 score = analyser.polarity_scores(d["full_text"])
                 d["vader_score"] = score
@@ -69,23 +69,29 @@ def process_tweet_file(inpath, out_json_file):
             # skip this user
             line = json_file.readline()
             i += 1
-    print(f"Found {canadian_cnt} tweets by a Canadian or mentioning a Canadian out of {i} total tweets") 
+    print(f"Found {canadian_cnt} tweets by a Canadian or mentioning a Canadian out of {i} total tweets")
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    
+
     my_path = os.path.join(os.getcwd(), args.input_path)
 
     out_dir = os.path.join(os.getcwd(), args.output_path)
-    
+
     # extract Canadian IDs
     # note we expect ground truth has no header
     with open("ground_truth.tsv", "r") as f:
         reader = csv.reader(f, delimiter='\t')
         canadian_ids = set([i[0] for i in reader])
-    
+
     if os.path.isdir(my_path):
-        out_file = os.path.join(out_dir, args.input_path + ".jsonl")
+        # extract the subdirectory
+        inp = my_path.split("/")
+        if inp[-1]:
+            inp = inp[-1]
+        else:
+            inp = inp[-2]
+        out_file = os.path.join(out_dir, inp + ".jsonl")
         print(out_file)
         out_obj = open(out_file, "w")
         for f in sorted(os.listdir(my_path)):
