@@ -32,7 +32,7 @@ def train(args):
             os.system("rm -r %s" % args.model_dir)
         else:
             raise Exception('dataset directory %s exists' % args.model_dir)
-    
+
     print('creating directory %s' % args.model_dir)
     os.mkdir(args.model_dir)
 
@@ -85,20 +85,17 @@ def train(args):
 
 def build_dataset(args):
     parser = argparse.ArgumentParser(prog='geoinf build_dataset',description='build a new dataset')
-    parser.add_argument('-f','--force',action='store_true')
     parser.add_argument('dataset_dir',help='the directory to put the dataset in')
     parser.add_argument('posts_file',help='the posts.json.gz file to use')
     parser.add_argument('user_id_field',help='the field name holding the user id of the post author')
-    parser.add_argument('mention_field',help='the field name holding the list of user ids mentioned in a post')
+    parser.add_argument('mention_field',help='the field name holding the list of user ids mentioned in a post (or the friends of a user, those they follow)')
+    parser.add_argument('follow_field',help='the field name holding the list of user ids following the given user', nargs='?', type=str, default=None)
 
     args = parser.parse_args(args)
 
     uid_field_name = args.user_id_field.split('.')[::-1]
     mention_field_name = args.mention_field.split('.')[::-1]
-    posts2dataset(args.dataset_dir,args.posts_file,
-                  lambda x: (lambda a: lambda dic, ind: a(a, dic, ind))(lambda s, dic, ind: str(dic) if ind == -1  else s(s,dic[uid_field_name[ind]], ind-1))(x, len(uid_field_name)-1),
-                  lambda x: (lambda a: lambda dic, ind: a(a, dic, ind))(lambda s, dic, ind: str(dic) if ind == -1 else (s(s,dic.get(mention_field_name[ind],[]), ind-1) if type(dic) == dict else map(lambda d: s(s,d,ind), dic)))(x, len(mention_field_name)-1),
-                  force=args.force)
+    posts2dataset(args.dataset_dir,args.posts_file, args.user_id_field, args.mention_field, args.follow_field)
 
     # done
 
