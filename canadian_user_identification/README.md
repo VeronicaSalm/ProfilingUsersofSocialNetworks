@@ -90,11 +90,10 @@ where:
 ## Spatial Label Propagation
 
 For SLP, we use a heavily modified version of the Python code in the Geoinference repository (https://github.com/networkdynamics/geoinference). Among other things:
-* I added some error handling to avoid crashes, and made expected file names more consistent.
-* I updated the graph construction code to only keep edges with weight at least 2 (i.e., where a user mentioned another at least twice).
-* Updated some required packages and libraries to work on the server in a docker container.
-
-The code uploaded to this repo contains all the changes that were necessary to make the script run on the server. If running it elsewhere, you will need to install a number of dependencies. 
+* I added some error handling to avoid crashes, and made expected file names more consistent. 
+* I updated the code to run in Python 3 rather than 2.
+* All modules other than SLP are removed, and the file structure is changed.
+* The code can now construct both follow and mention graphs, and keeps only bidirectional edges.
 
 ### geoinference
 
