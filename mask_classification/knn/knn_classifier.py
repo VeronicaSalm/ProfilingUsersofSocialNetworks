@@ -28,8 +28,10 @@ logger = logging
 import tensorflow_hub as hub
 import tensorflow as tf
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 import pickle
+# TODO: Uncomment next line to revert to USE
 embed = hub.load("https://tfhub.dev/google/universal-sentence-encoder/4")
 # Reduce logging output.
 tf.logging.set_verbosity(tf.logging.ERROR)
@@ -55,7 +57,12 @@ def determine_class(neighbours, data_manager):
     return max(count, key=count.get)
 
 
-def bow_vectorize(text):
+model = SentenceTransformer('bert-base-nli-mean-tokens')
+def st_vectorize(text):
+    embedding = model.encode(text)
+
+
+def use_vectorize(text):
     """
     Creates a Bag of Words vector
     :param text: the input text
@@ -288,7 +295,7 @@ def main():
         fname = "knn/tmp/{}.pickle".format(tweet_id)
         if not os.path.exists(fname):
             with open(fname, "wb") as f:
-                pickle.dump(bow_vectorize(t), f)
+                pickle.dump(st_vectorize(t), f)
         vectors.append(fname)
     correct = 0.0
     total = len(test)
@@ -309,7 +316,7 @@ def main():
         out_name = "knn/test/{}.pickle".format(tweet_id)
         if not os.path.exists(out_name):
             # pickle the object and store it
-            v = bow_vectorize(normalize_text(test.get_tokens(i)))
+            v = st_vectorize(normalize_text(test.get_tokens(i)))
             with open(out_name, "wb") as f:
                 pickle.dump(v, f)
         else:
