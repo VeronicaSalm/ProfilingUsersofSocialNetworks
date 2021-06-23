@@ -10,9 +10,9 @@ A geoinference dataset is stored on disk in a directory with the following forma
 """
 
 import json
-import os, os.path, sys
+import os, os.path, sys, csv
 import gzip
-from graph_tool.all import *
+import networkit as nk
 from slp.settings import LOCATION_SOURCE
 
 
@@ -83,6 +83,20 @@ class SparseDataset(object):
     def build_graph(self):
         fname = os.path.join(self._dataset_dir, 'saved_graph.gt')
         print("Loading graph from:", fname)
-        G = load_graph(fname)
-        print("successfully loaded graph")
-        return G
+        G = nk.readGraph(fname, nk.Format.GraphToolBinary)
+        if not G.checkConsistency():
+            raise Exception("The constructed graph is inconsistent. Something went wrong! Please fix this error and try again.")
+        print("Successfully loaded graph.")
+
+        vertex_path = os.path.join(self._dataset_dir, 'vertex_to_userID.csv')
+        print("Loading vertices from:", vertex_path)
+        vertex_to_userID = []
+        with open(vertex_path, "r") as f:
+            reader = csv.reader(f)
+            # saving the graph will condense the vertex IDs, so make sure
+            # to save the condensed IDs (ranging from 0 to numNodes-1) accordingly
+            for row in reader:
+                vertex_to_userID.append(str(row[1]))
+
+        print("Successfully loaded vertex to user map.")
+        return G, vertex_to_userID

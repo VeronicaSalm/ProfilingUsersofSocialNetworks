@@ -15,8 +15,9 @@ A geoinference dataset is stored on disk in a directory with the following forma
 import json
 import os, os.path
 import gzip
-from graph_tool.all import *
+import networkit as nk
 import sys
+import csv
 
 def index_json(idx_string, obj):
     """
@@ -91,134 +92,123 @@ def posts2mention_network(posts_dir,extract_user_id,
                     (e.g., None for mention graphs, but a string for followers)
 
     """
-    G = Graph()
+    G = nk.graph.Graph(weighted=True, directed=True)
 
     # figure out the working dir
     if not working_dir:
         working_dir = os.path.dirname(posts_dir)
 
-    # bin the user data
     cnt = 0
-    # maps vertex descriptor --> user id
-    G.vp.user_id = G.new_vertex_property("string")
-    # maps edge descriptor --> weight
-    G.ep.weight = G.new_edge_property("int64_t") # track edge weights
-
     # maps user id --> vertex descriptor
     vertices = dict()
-    # maps a tuple of user ids to their edge descriptor in the graph
-    edges = dict()
-    user_set = set()
     for posts_fname in os.listdir(posts_dir):
         fh = gzip.open(os.path.join(posts_dir, posts_fname),'r')
         print(f"Processing {posts_fname}...")
         for line in fh:
             cnt += 1
             post = json.loads(line)
-            # NOTE: this works for follow relations too, even if this variable
+            # NOTE: this works to extract follow relations too, even if this variable
             # is called "mentions"
             mentions = index_json(extract_mentions, post)
             uid = str(index_json(extract_user_id, post))
 
             # vertex for this user
             if uid not in vertices:
-                v = G.add_vertex()
-                G.vp.user_id[v] = uid
+                v = G.addNode() # v is an integer descriptor
                 vertices[uid] = v
 
             for m in mentions:
                 m = str(m)
                 if m not in vertices:
-                    v = G.add_vertex()
-                    G.vp.user_id[v] = m
+                    v = G.addNode()
                     vertices[m] = v
-                    # print("Added new vertex:", m)
                 uv = vertices[uid]
                 mv = vertices[m]
 
-                # determine if the edge uid->m already exists
-                # fun fact: if you pass a string into G.iter_in_edges,
-                #           you get a segmentation fault :)
-                is_target_of_uid = [G.vp.user_id[edge[1]] for edge in list(G.iter_out_edges(uv))]
                 if uid == m and "retweeted_status" in post:
                     # this is a retweet. Retweets automatically mention the retweeting
                     # user, for some reason?
                     continue
-                if m in is_target_of_uid:
+                if G.hasEdge(uv, mv):
                     # if m is already a target of this user, this is not the
                     # first time uid has mentioned m
                     # find the existing edge and simply increase its weight
-                    e = edges[(uid, m)]
-                    G.ep.weight[e] += 1
+                    w = G.weight(uv, mv)
+                    G.setWeight(uv, mv, w+1)
                 else:
                     # this is the first time uid has mentioned m
-                    e = G.add_edge(uv,mv)
-                    G.ep.weight[e] = 1
-                    edges[(uid, m)] = e
+                    G.addEdge(uv, mv, 1)
 
             if extract_incoming_edges:
                 followers = index_json(extract_incoming_edges, post)
                 for m in followers:
                     m = str(m)
                     if m not in vertices:
-                        v = G.add_vertex()
-                        G.vp.user_id[v] = m
+                        v = G.addNode()
                         vertices[m] = v
-                        # print("Added new vertex:", m)
                     uv = vertices[uid]
                     mv = vertices[m]
 
-                    # determine if the edge m->uid already exists
-                is_target_of_m = [G.vp.user_id[edge[1]] for edge in list(G.iter_out_edges(mv))]
-                if uid == m and "retweeted_status" in post:
-                    # this is a retweet. Retweets automatically mention the retweeting
-                    # user, for some reason?
-                    # NOTE: this should never be relevant for follow graphs, but is left in just
-                    #       in case
-                    continue
-                if uid in is_target_of_m:
-                    # if uid is already a target of this user,
-                    # find the existing edge and simply increase its weight
-                    e = edges[(m, uid)]
-                    G.ep.weight[e] += 1
-                else:
-                    # this is the first time uid has mentioned m
-                    e = G.add_edge(mv, uv)
-                    G.ep.weight[e] = 1
-                    edges[(m, uid)] = e
+                    if uid == m and "retweeted_status" in post:
+                        continue
 
-    print(cnt, "total tweets")
-    print(f"Found {len(vertices)} vertices and {len(edges)} edges.")
+                    if G.hasEdge(mv, uv):
+                        # if uid is already a target of this user,
+                        # find the existing edge and simply increase its weight
+                        w = G.weight(mv, uv)
+                        G.setWeight(mv, uv, w+1)
+                    else:
+                        # this is the first time uid has mentioned m
+                        G.addEdge(mv, uv, 1)
+            #  print("User", uid)
+            #  print("Mentions", mentions)
+            #  print(vertices)
+            #  print(list(G.iterNodes()))
+            #  print(list(G.iterEdgesWeights()))
+            #  sys.exit()
+    print(f"Processed {cnt} total objects.")
+    print(f"Found {G.numberOfNodes()} vertices and {G.numberOfEdges()} edges.")
 
     # iterate over all edges (source, target)
     # if both (source, target) and (target, source) are edges,
     # then keep the edges
     # otherwise, remove them
-    for source, target in list(edges.keys()):
-      if (target, source) not in edges or target == source:
-          G.remove_edge(edges[(source, target)])
-          del edges[(source, target)]
-    print(f"Found {len(vertices)} vertices and {len(edges)} bidirectional edges.")
+    edges = list(G.iterEdges())
+    for source, target in edges:
+        if (not G.hasEdge(target, source)) or target == source:
+            G.removeEdge(source, target)
+    print(f"Found {G.numberOfNodes()} vertices and {G.numberOfEdges()} bidirectional edges.")
 
 
     # Remove any vertices with degree 0 from the final graph
-    to_remove = []
     for vstr, v in list(vertices.items()):
-      if len(list(G.iter_all_edges(v))) == 0:
-          to_remove.append(v)
+      if G.degree(v) == 0:
+          G.removeNode(v)
           del vertices[vstr]
 
-    G.remove_vertex(to_remove)
-    print(f"Found {len(vertices)} vertices with degree > 0 and {len(edges)} bidirectional edges.")
+    print(f"Found {G.numberOfNodes()} vertices with degree > 0 and {G.numberOfEdges()} bidirectional edges.")
 
-    # save an image of the resulting graph
-    # omitted: doesn't work well for large graphs
-    #graph_draw(G, vertex_text=G.vertex_index, output=os.path.join(working_dir, "graph_visualization.pdf"))
+    if not G.checkConsistency():
+        raise Exception("The constructed graph is inconsistent. Something went wrong! Please fix this error and try again.")
 
-    # save the graph to file
+
     print("Writing network...", end=" ")
     dest = os.path.join(working_dir,'saved_graph.gt')
-    G.save(dest)
+    nk.writeGraph(G, dest, nk.Format.GraphToolBinary)
+    print("Done!")
+
+    # TODO: write vertex map and also add code to load it in / pass it around
+    print("Writing user ID to vertex map...", end=" ")
+    vertex_path = os.path.join(working_dir,'vertex_to_userID.csv')
+    with open(vertex_path, "w") as f:
+        writer = csv.writer(f)
+        # saving the graph will condense the vertex IDs, so make sure
+        # to save the condensed IDs (ranging from 0 to numNodes-1) accordingly
+        u2v = list(sorted(vertices.items(), key=lambda x: x[1]))
+        idx = 0
+        for user, vertex in u2v:
+            writer.writerow([idx, user])
+            idx += 1
     print("Done!")
 
     # done

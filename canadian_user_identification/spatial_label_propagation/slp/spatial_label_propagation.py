@@ -93,10 +93,10 @@ class SpatialLabelPropagation:
         """
 
         print('Loading mention network')
-        G = dataset.build_graph()
-        all_users = set(G.iter_vertices())
+        G, vertex2user = dataset.build_graph()
+        all_users = set(G.iterNodes())
         print('Loaded network with %d users and %d edges'
-                     % (len(all_users), len(list(G.iter_edges()))))
+                     % (G.numberOfNodes(), G.numberOfEdges()))
 
         # This dict will contain a mapping from each user ID associated with at
         # least 5 posts within a 15km radius to the user's home location
@@ -133,8 +133,8 @@ class SpatialLabelPropagation:
             num_located_at_start = len(user_to_estimated_location)
             num_processed = 0
             for vertex in all_users:
-                user_id = G.vp.user_id[vertex]
                 user_to_next_estimated_location = self.update_user_location(vertex, G,
+                                          vertex2user,
                                           user_to_home_loc,
                                           user_to_estimated_location,
                                           user_to_next_estimated_location)
@@ -170,7 +170,7 @@ class SpatialLabelPropagation:
         return SpatialLabelPropagationModel(user_to_estimated_location)
 
 
-    def update_user_location(self, vertex, G,
+    def update_user_location(self, vertex, G, vertex2user,
                              user_to_home_loc, user_to_estimated_location,
                              user_to_next_estimated_location):
         """
@@ -178,8 +178,12 @@ class SpatialLabelPropagation:
         the location of the specified user_id in the
         user_to_next_estimated_location dict.  Users who have a home location
         (defined from GPS data) will always be updated with their home location.
+
+        vertex2user: the list of userIDs, the index of a user is its vertex descriptor
+                     in the graph
         """
-        user_id = str(G.vp.user_id[vertex])
+        user_id = vertex2user[vertex]
+
         # Short-circuit if we already know where this user is located
         # so that we always preserve the "hint" going forward
         if user_id in user_to_home_loc:
@@ -189,8 +193,10 @@ class SpatialLabelPropagation:
         # For each of the users in the user's ego network, get their estimated
         # location, if any
         locations = []
-        for neighbor_vertex in G.iter_all_neighbors(vertex): # G.neighbors_iter(user_id):
-            neighbor_id = G.vp.user_id[neighbor_vertex]
+        # NOTE: this gets all OUTGOING neighbors. This is fine for graphs where all
+        # edges are bidirectional
+        for neighbor_vertex in G.iterNeighbors(vertex):
+            neighbor_id = vertex2user[neighbor_vertex]
             if neighbor_id in user_to_estimated_location:
                 locations.append(user_to_estimated_location[neighbor_id])
 
