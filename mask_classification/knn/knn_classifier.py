@@ -47,19 +47,18 @@ def determine_class(neighbours, data_manager):
     :param data_manager: the truth data manager
     :return: str of the predicted class
     """
-    # print(neighbours, type(neighbours))
     neighbours_classes = []
     for neighbour in neighbours:
         index = neighbour[1]
         neighbours_classes.append(data_manager.get_relation(index))
     count = Counter(neighbours_classes)
-    # print(count)
     return max(count, key=count.get)
 
 
 model = SentenceTransformer('bert-base-nli-mean-tokens')
 def st_vectorize(text):
     embedding = model.encode(text)
+    return embedding
 
 
 def use_vectorize(text):
@@ -70,20 +69,8 @@ def use_vectorize(text):
     """
     messages = [text]
     message_embeddings = session.run(embed(messages))
-    #  print(message_embeddings)
     for i, message_embedding in enumerate(np.array(message_embeddings).tolist()):
         return message_embedding
-        #  print("Message: {}".format(messages[i]))
-        #  print("Embedding size: {}".format(len(message_embedding)))
-        #  message_embedding_snippet = ", ".join((str(x) for x in        message_embedding[:3]))
-        #  print("Embedding[{},...]\n".
-        #             format(message_embedding_snippet))
-
-    #  features = defaultdict(int)
-    #  for token in normalize(tokenize(text)):
-    #      features[token] += 1
-    #  return features
-
 
 def tfidf_vectorizer(corpus):
     """
@@ -249,7 +236,6 @@ def train_naive_bayes(train_path):
     vocab, prior, cond_prob = train(training_data, features=features[training_data.num_partitions()])
     training_results = [vocab, prior, cond_prob]
 
-    #  print("Performing {}-fold cross validation...".format(num_partitions))
     #  k_fold_cross_validation(training_data, num_partitions, features)
     return training_results
 
@@ -295,7 +281,7 @@ def main():
         fname = "knn/tmp/{}.pickle".format(tweet_id)
         if not os.path.exists(fname):
             with open(fname, "wb") as f:
-                pickle.dump(st_vectorize(t), f)
+                pickle.dump(use_vectorize(t), f)
         vectors.append(fname)
     correct = 0.0
     total = len(test)
@@ -316,7 +302,7 @@ def main():
         out_name = "knn/test/{}.pickle".format(tweet_id)
         if not os.path.exists(out_name):
             # pickle the object and store it
-            v = st_vectorize(normalize_text(test.get_tokens(i)))
+            v = use_vectorize(normalize_text(test.get_tokens(i)))
             with open(out_name, "wb") as f:
                 pickle.dump(v, f)
         else:
@@ -332,16 +318,8 @@ def main():
         for index, fname in enumerate(vectors):  # go over every document and calculate sim
             with open(fname, "rb") as f:
                 vector = pickle.load(f)
-
-            # add correct class vector
-            #  for c in sorted(CLASSES):
-            #      if training.get_relation(i) == c:
-            #          vector.append(1)
-            #      else:
-            #          vector.append(0)
             neighbours.append((sim(v, vector), index))
         top_k = sorted(neighbours, key=lambda x: x[0], reverse=True)[:args.k]
-        # print("{test_doc}: {neighbours}".format(test_doc=i, neighbours=top_k))
         predicted_class = determine_class(top_k, training)
         if predicted_class == expected_class:
             correct += 1.0
@@ -358,7 +336,6 @@ def main():
     errors_obj.close()
 
 
-    #  print("tf-idf")
     #  # build vectors from training data
     #  text_collection = TextCollection(corpus)
     #  vectors = []
@@ -378,7 +355,6 @@ def main():
     #      for index, vector in enumerate(vectors):  # go over every document and calculate sim
     #          neighbours.append((sim(v, vector), index))
     #      top_k = sorted(neighbours, key=lambda x: x[0], reverse=True)[:args.k]
-    #      # print("{test_doc}: {neighbours}".format(test_doc=i, neighbours=top_k))
     #      predicted_class = determine_class(top_k, training)
     #      if predicted_class == expected_class:
     #          correct += 1.0

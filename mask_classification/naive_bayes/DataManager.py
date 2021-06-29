@@ -56,7 +56,6 @@ class DataManager():
         """ Given an index 0 <= idx < len(data), return the text (tokens)
         of the data at that position. """
         self._check_index(idx)
-        print(self.data[idx][TOKENS])
         return self.data[idx][TOKENS]
 
     def get_language(self, idx):
