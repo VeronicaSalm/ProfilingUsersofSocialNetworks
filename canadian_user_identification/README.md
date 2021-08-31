@@ -113,7 +113,7 @@ where:
 #### Construct Follow Network
 If, instead, you want to construct a network of follow relationships, use:
 ```
-python3 -m slp.app build_dataset follows_test tweets "id" "friends" "followers"
+python3 -m slp.app build_dataset dataset follows_test "id" "friends" "followers"
 ```
 where:
 * `build_dataset`: indicates that the mode is dataset construction
@@ -121,7 +121,7 @@ where:
 * `follows_test`: the path to a directory containing one or more follow files (gzipped jsonl files) containing on each line the follow data for a given user
 * `“id”`: sets the field where the user id can be found
 * `“friends”`: sets the field where the list of followed users can be found
-* `“friends”`: sets the field where the list of followed users can be found
+* `“followers”`: sets the field where the list of following users can be found
 
 #### Run SLP
 Once the dataset is constructed, SLP can be run using:
