@@ -12,4 +12,8 @@ This folder contains all the code used to extract ground-truth Canadian users, r
 
 This folder contains the KNN classifier (with hashtag segmentation and hand-crafted examples) used to classify the mask-related sentiment of tweets.
 
+## mask_classifier_data
+
+This folder contains the scripts, data, and final output for the mask classifier dataset. 
+
 
