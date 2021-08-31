@@ -15,6 +15,7 @@ check_tweet_ids.py
 consolidate_ratings.py
 filter_tweets.py
 find_mismatches.py
+random_tweet_sample.py
 unzip.py
 ```
 Scripts to assist in constructing the dataset, see below for running instructions and explanations.
@@ -118,13 +119,30 @@ TOTAL: 3773
 ## Running Instructions
 
 In general, the flow is as follows:
-1. Download `.zip` archives, one for each rater containing the tweets they have classified so far.
-2. Run `unzip.py` to extract the archives to a data folder.
-3. Run `find_mismatches.py` to produce a Mismatch csv.
-4. After resolving all mismatches manually with other raters, run `consolidate_ratings.py` to produce a single output file.
-5. Finally, run `check_tweet_ids.py` to produce the final output, ensuring that the ID and text for each tweet still matches the original.
+1. Generate a pseudo-random tweet sample for annotation using `random_tweet_sample.py`.
+2. Manually upload the files to Google Drive, have raters fill in their classification for each tweet.
+3. Download `.zip` archives, one for each rater containing the tweets they have classified so far.
+4. Run `unzip.py` to extract the archives to a data folder.
+5. Run `find_mismatches.py` to produce a Mismatch csv.
+6. After resolving all mismatches manually with other raters, run `consolidate_ratings.py` to produce a single output file.
+7. Finally, run `check_tweet_ids.py` to produce the final output, ensuring that the ID and text for each tweet still matches the original.
 
 The file `filter_tweets.py` was not involved in the construction of the dataset, but does filter for tweets containing conditional language and is included in case it is useful.
+
+#### random_tweet_sample.py
+
+This file does not take any command-line arguments. Instead, the variables on lines 80 and 96 can be updated to change the input and output locations:
+* `paths = ["2021-07"]` on line 80 can be set to any list of directories, each containing jsonl files of tweets from the given month.
+* `dest` on line 96 can be changed to any output directory name.
+
+Finally, the raters can be updated by changing the variables on lines 7 and 108. The subfolders where the outputs are stored can be changed using the loop on lines 87-93. 
+
+Once these variables are updated, this script will, for each input folder:
+1. Read all tweets in the input folder.
+2. Check each tweet to see if it contains mask-related keywords. If so, the tweet is stored in a mask-related set as well as a general set.
+3. The sets are regularly subsampled to ensure that the script is not storing massive objects during runtime (many of the tweet folders have millions of tweets).
+4. 2000 mask-related and 2000 general tweets are sampled from the two sets and stored into output files with the suffix "general.csv" and "mask\_related.csv" respectively.
+5. The output files will all be stored in the folder called "1" in the final output (if no variables were changed).
 
 #### unzip.py 
 Run this script using:
