@@ -82,10 +82,10 @@ Unrelated                 2248
 Not Sure                  1165
 
 TOTAL: 3539
-````
+```
 
 Mask Related File Statistics
-````
+```
              English    French    English+French    Multiple    Other
 ---------  ---------  --------  ----------------  ----------  -------
 Pro-Mask        2196         0                 1          38        1
