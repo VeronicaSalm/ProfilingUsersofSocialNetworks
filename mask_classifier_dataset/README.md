@@ -1,4 +1,4 @@
-## Mask Classifier Dataset
+# Mask Classifier Dataset
 
 ## Code Structure 
 
@@ -25,7 +25,7 @@ final_output_IDs_only.csv
 ```
 The final, consolidated output dataset. `final_output.csv` contains the tweet text, while `final_output_IDs_only.csv` is identical but with the "Full Text" column removed.
 
-### Running Instructions
+## Running Instructions
 
 In general, the flow is as follows:
 1. Download `.zip` archives, one for each rater containing the tweets they have classified so far.
