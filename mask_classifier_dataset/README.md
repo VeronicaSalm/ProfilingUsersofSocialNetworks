@@ -24,6 +24,95 @@ final_output_IDs_only.csv
 ```
 The final, consolidated output dataset. `final_output.csv` contains the tweet text, while `final_output_IDs_only.csv` is identical but with the "Full Text" column removed.
 
+## Dataset
+
+Overall Statistics
+```
+             English    French    English+French    Multiple    Other
+---------  ---------  --------  ----------------  ----------  -------
+Pro-Mask        2283         0                 1          40        1
+Anti-Mask        682         0                 2           0        0
+Neutral          696         0                 0           5        0
+Unrelated       2324         0                 7          28        0
+Not Sure           4        97                 0         105     1037
+
+Language          Count
+--------------  -------
+English            5989
+French               97
+English+French       10
+Multiple            178
+Other              1038
+
+Mask Classification      Count
+---------------------  -------
+Pro-Mask                  2325
+Anti-Mask                  684
+Neutral                    701
+Unrelated                 2359
+Not Sure                  1243
+
+TOTAL: 7312
+```
+
+General Sample File Statistics
+```
+             English    French    English+French    Multiple    Other
+---------  ---------  --------  ----------------  ----------  -------
+Pro-Mask          87         0                 0           2        0
+Anti-Mask         19         0                 0           0        0
+Neutral           18         0                 0           0        0
+Unrelated       2214         0                 6          28        0
+Not Sure           2        96                 0          72      995
+
+Language          Count
+--------------  -------
+English            2340
+French               96
+English+French        6
+Multiple            102
+Other               995
+
+Mask Classification      Count
+---------------------  -------
+Pro-Mask                    89
+Anti-Mask                   19
+Neutral                     18
+Unrelated                 2248
+Not Sure                  1165
+
+TOTAL: 3539
+````
+
+Mask Related File Statistics
+````
+             English    French    English+French    Multiple    Other
+---------  ---------  --------  ----------------  ----------  -------
+Pro-Mask        2196         0                 1          38        1
+Anti-Mask        663         0                 2           0        0
+Neutral          678         0                 0           5        0
+Unrelated        110         0                 1           0        0
+Not Sure           2         1                 0          33       42
+
+Language          Count
+--------------  -------
+English            3649
+French                1
+English+French        4
+Multiple             76
+Other                43
+
+Mask Classification      Count
+---------------------  -------
+Pro-Mask                  2236
+Anti-Mask                  665
+Neutral                    683
+Unrelated                  111
+Not Sure                    78
+
+TOTAL: 3773
+```
+
 ## Running Instructions
 
 In general, the flow is as follows:
@@ -83,6 +172,12 @@ Also, the input rater files are expected to obey the following restrictions:
 ```
 
 #### consolidate_ratings.py
+
+Run this script once all mismatches are resolved to (1) produce an output CSV with the final rating for each tweet and (2) print statistics on the number of tweets in each class (overall and general vs mask-related tweets). 
+
+
 #### check_tweet_ids.py
+
+
 #### filter_tweets.py
 
