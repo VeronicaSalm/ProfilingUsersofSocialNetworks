@@ -26,6 +26,8 @@ The final, consolidated output dataset. `final_output.csv` contains the tweet te
 
 ## Dataset
 
+The final dataset consisting of 7312 tweets can be found in `final_output.csv` or `final_output_IDs_only.csv` (with the text column removed). The classifier requires the first version with text included.
+
 Overall Statistics
 ```
              English    French    English+French    Multiple    Other
@@ -174,10 +176,31 @@ Also, the input rater files are expected to obey the following restrictions:
 #### consolidate_ratings.py
 
 Run this script once all mismatches are resolved to (1) produce an output CSV with the final rating for each tweet and (2) print statistics on the number of tweets in each class (overall and general vs mask-related tweets). 
-
+```
+ python3 consolidate_ratings.py data_with_ratings Mismatches.xlsx output.csv             
+```
+* `data_with_ratings` is the file containing one extracted folder per rater (this is the `dest` dir as produced by `unzip.py`)
+* 'Mismatches.xlsx` is the filled-in (fully resolved) mismatches spreadsheet
+* `output.csv` is the file where the output will be stored
 
 #### check_tweet_ids.py
 
+Run this script to create two cleaned versions of the output, which have the correct (original) tweet ID and tweet text, rather than the mangled versions resulting from reading excel spreadsheets (which caused many IDs to be truncated and lose precision due to the way they were stored).
+```
+python3 check_tweet_ids.py output.csv original_data_unannotated final_output_IDs_only.csv
+```
+* `output.csv` is the output of `consolidate_ratings.py`, a csv with the consolidated ratings from both raters and the mismatch spreadsheet
+* `original_data_unannotated` is the folder containing the original generated csv files with tweets
+* `final_output_IDs_only.csv` is the destination for the new final output file with text removed
+
+Note that the input csv file `output.csv` will be overwritten by this script! Make sure you have a backup if you don't want this file to be changed. The only change is to correct tweet ID and text mistakes.
 
 #### filter_tweets.py
+
+This script will produce a csv with 50 tweets containing conditional language from the data folder. This script was experimental and not involved in the process of constructing this dataset, but may be usable in future. 
+```
+python3 filter_tweets.py data_with_ratings conditional_tweets.csv
+```
+* `data_with_ratings` is the file containing one extracted folder per rater (this is the `dest` dir as produced by `unzip.py`)
+* `conditional_tweets.csv` is the csv file where the output tweets should be stored.
 
