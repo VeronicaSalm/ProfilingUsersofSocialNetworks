@@ -3,9 +3,22 @@
 ## Code Structure
 
 ```
+ground_truth.tsv
+```
+This file contains the IDs of the 22k Twitter users found to be Canadian by both the Canadian filter and spatial label propagation, along with their location (given as a pair of lat/lon coordinates).
+
+```
+canadian_ids_from_filter.tsv
+```
+This file is a list of IDs of Twitter users found to be Canadian by the Canadian filter only.
+
+```
 canadian_tweets_22k_dataset.zip
 ```
 This file is a compressed version of the dataset consisting of all tweets IDs of tweets written by the 22k Canadian users.
+
+
+
 
 ## Running Instructions
 
